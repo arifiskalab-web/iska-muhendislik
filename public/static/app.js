@@ -3709,3 +3709,13 @@ window.downloadPhoto = function(photoData, photoName) {
   link.download = photoName;
   link.click();
 };
+
+// Initialize app on DOM ready
+document.addEventListener('DOMContentLoaded', init);
+
+// Expose functions globally
+window.login = login;
+window.logout = logout;
+window.showTab = showTab;
+window.showFieldTab = showFieldTab;
+window.selectProjectForFieldWork = selectProjectForFieldWork;
