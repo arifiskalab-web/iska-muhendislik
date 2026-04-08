@@ -121,11 +121,54 @@ Bu sistem, inşaat mühendisliği alanında **RBTY 2019** ve **TBDY 2018** yöne
 ✅ Otomatik iş numarası oluşturma  
 ✅ Saha ekiplerine otomatik bildirim  
 ✅ Saha tarihi 1 gün öncesi hatırlatma sistemi  
+
+### 🆕 Yeni Eklenen Özellikler:
+
+✅ **Rölöve Sekmesi:**
+- Kamera ile fotoğraf çekme veya galeriden seçme
+- İnceleme katı seçimi (10. Bodrum'dan 30. Kata kadar)
+- Kat sayısı ve bodrum kat sayısı girişi
+- Kolon ve perde sayısı belirleme
+- Kat yüksekliklerini girme
+- **Otomatik kolon isimlendirme** (SZ01, SZ02... format)
+- Kolon boyutları (geniş/dar yüzey) girişi
+- Boyut değiştirme butonu (yön ters durumlar için)
+- İlk girilen boyutun diğer kolonlara otomatik kopyalanması
+
+✅ **Schmidt Çekici - Otomatik Değer Üretimi:**
+- Ortalama değer (R_ort) elle girilir
+- Sapma aralığı seçimi (±8 gibi)
+- R1'den R10'a kadar değerler otomatik üretilir
+- Değerler ortalamaya göre ±sapma aralığında rastgele oluşturulur
+
+✅ **Karot - Otomatik Hesaplama:**
+- Çap (mm), Boy (mm), Kırılma Yükü (kN) elle girilir
+- **fb (MPa)** otomatik hesaplanır: F/A formülü
+- **fck (MPa)** otomatik hesaplanır: fb × 0.85
+- Eleman kodu ve kat bilgisi
+
+✅ **Güncellenen Veritabanı Şeması:**
+- Rölöve tablosu (resim, kat bilgileri)
+- Kat yükseklikleri tablosu
+- Kolon tanımları (kod, boyutlar, yön)
+- Perde tanımları
+- Güncellenmiş Schmidt ve Karot tabloları
+
 ✅ Kolon ve Perde Sıyırma veri girişi  
 ✅ Kolon ve Perde Röntgen veri girişi  
-✅ Karot deneyi veri girişi  
-✅ Schmidt çekici deneyi veri girişi  
+✅ Karot deneyi veri girişi (otomatik hesaplama ile)  
+✅ Schmidt çekici deneyi veri girişi (otomatik değer üretimi ile)  
 ✅ Cloudflare D1 SQLite veritabanı entegrasyonu  
+
+## 🚧 Devam Eden Geliştirmeler
+
+- [ ] Sıyırma ve Röntgen alt sekmeleri (Kolon/Perde ayrımı)
+- [ ] Kolon sıyırma detaylı formu (geniş/dar yüzey, donatı, etriye, pas payı, okunan çap)
+- [ ] Perde sıyırma ve röntgen formları
+- [ ] Laboratuvar teknisyeni paneli
+- [ ] Raportör paneli ve analiz sonucu girişi
+- [ ] İş akışı durumları (Sahada → Lab → Raportör)
+- [ ] Koordinatör tarafından raportör ataması
 
 ## 🚧 Gelecek Geliştirmeler
 
