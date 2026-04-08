@@ -1,4 +1,4 @@
-# Yapı Risk Analizi Yönetim Sistemi - v2.0
+# Yapı Risk Analizi Yönetim Sistemi - v3.0 ✨
 
 Şirket içi iş akışını hızlandıran, hataları düzelten ve daha hızlı kayıt tutabilen yapı risk analizi ve performans değerlendirmesi yönetim sistemi.
 
@@ -7,26 +7,52 @@
 - **Geliştirme Ortamı**: https://3000-iqovlox7db4iyo99fr7qb-3c7ff1b5.sandbox.novita.ai
 - **Production**: (Cloudflare Pages'e deploy edilecek)
 
-## 🎉 Versiyon 2.0 Yeni Özellikler
+## 🎊 Versiyon 3.0 - TÜM ÖZELLİKLER TAMAMLANDI!
 
-### 📸 Profesyonel Fotoğraf Sistemi
+### 🆕 Yeni Eklenenler (v3.0)
+
+#### 🔬 Röntgen Alt Sekmeleri + Fotoğraflar
+- ✅ **Kolon Röntgen**: Ayrı sekme, kolon kodları dropdown, 2 röntgen fotoğrafı
+- ✅ **Perde Röntgen**: Ayrı sekme, perde kodları dropdown, 2 röntgen fotoğrafı
+- ✅ **Rölöve Entegrasyonu**: Kolonlar ve perdeler otomatik yüklenir
+- ✅ **Fotoğraf Görüntüleme**: Her kolon/perde için röntgen fotoğrafları modal'da gösterilir
+
+#### 🔨 Schmidt Otomatik Değer Üretici (Aktif!)
+- ✅ **Otomatik R1-R10**: Ortalama değer gir, 10 okuma otomatik üretilir
+- ✅ **Sapma Aralığı**: Varsayılan ±8, kullanıcı değiştirebilir
+- ✅ **Anında Hesaplama**: Değerler girildiğinde ortalama otomatik hesaplanır
+- ✅ **Temizleme**: Tüm okumaları tek tuşla sıfırlama
+- ✅ **Görsel Feedback**: Başarılı üretim animasyonu
+- ✅ **Eleman Tipi**: Kolon/Perde/Kiriş seçimi
+
+#### 🧪 Karot Otomatik Hesaplama (Aktif!)
+- ✅ **fb Hesaplama**: Çap (mm) + Kırılma Yükü (kN) → fb (MPa) otomatik
+- ✅ **fck Tahmini**: fck ≈ 0.85 × fb formülü otomatik uygulanır
+- ✅ **Formül Gösterimi**: Hesaplama formülleri ekranda gösterilir
+- ✅ **Gerçek Zamanlı**: Değerler girildiğinde anında hesaplanır
+- ✅ **Karot Var/Yok**: Karot durumu seçimi
+- ✅ **Eleman Kodu**: SZ01 gibi kolon kodları ile ilişkilendirme
+
+### 📸 Profesyonel Fotoğraf Sistemi (v2.0)
 - ✅ **Kamera Entegrasyonu**: Mobil arka kamera ile direkt çekim
 - ✅ **Galeri Seçimi**: Telefon galerisinden fotoğraf yükleme
 - ✅ **Otomatik Sıkıştırma**: 3-5 MB → 50-150 KB (20-30x küçültme!)
 - ✅ **Akıllı İsimlendirme**: `SZ01_kolon_gorunumu.jpg` formatı
-- ✅ **5 Fotoğraf Türü**: Görünüm, Donatı Çapı, Etriye Çapı, Korozyon, Etriye Aralığı
+- ✅ **7 Fotoğraf Türü**: 
+  - Sıyırma: Görünüm, Donatı Çapı, Etriye Çapı, Korozyon, Etriye Aralığı
+  - Röntgen: Röntgen Görüntüsü 1, Röntgen Görüntüsü 2
 - ✅ **Merkezi Fotoğraf Yönetimi**: Tüm fotoğraflar tek veritabanında
 - ✅ **Raportör İndirme**: Tekli veya toplu fotoğraf indirme
 
-### 🏗️ Gelişmiş Sıyırma Modülü
+### 🏗️ Gelişmiş Sıyırma Modülü (v2.0)
 - ✅ **Alt Sekmeler**: Kolon ve Perde ayrı formlar
 - ✅ **Rölöve Entegrasyonu**: Kolon kodları otomatik dropdown
 - ✅ **Detaylı Alanlar**: Geniş/dar yüzey, donatı, etriye, pas payı, okunan çap
 - ✅ **Otomatik Boyut Doldurma**: Rölöveden boyutlar otomatik gelir
-- ✅ **Fotoğraf Ekleme**: Her kolon için 5 fotoğraf
+- ✅ **5 Fotoğraf/Kolon**: Her kolon için 5 fotoğraf türü
 - ✅ **Fotoğraf Görüntüleme**: Modal'da tüm fotoğrafları görme
 
-### 📐 Rölöve Sistemi
+### 📐 Rölöve Sistemi (v2.0)
 - ✅ **Kamera/Galeri ile Rölöve**: Bina rölövesini fotoğrafla
 - ✅ **İnceleme Katı**: 10. Bodrum'dan 30. Kat'a kadar seçim
 - ✅ **Otomatik İsimlendirme**: SZ01, SZ02... (Zemin Kat için)
@@ -34,25 +60,22 @@
 - ✅ **Boyut Değiştir**: Kolon yönü ters olduğunda swap
 - ✅ **Akıllı Kopyalama**: İlk kolon boyutu diğerlerine kopyalanır
 
-### 🔢 Otomatik Hesaplamalar
-- ✅ **Schmidt Otomatik Değerler**: R_ort girilir, R1-R10 otomatik üretilir
-- ✅ **Karot Hesaplamaları**: fb ve fck otomatik hesaplanır
-- ✅ **Sapma Aralığı**: ±8 gibi özelleştirilebilir
-
-## 📋 Ana İş Akışı
+## 📋 Tam İş Akışı
 
 ```
 1. Koordinatör → Yeni İş Kaydı + Saha Ataması
 2. Saha Ekibi → Rölöve Ekleme + Kolon/Perde Tanımlama
-3. Saha Ekibi → Sıyırma/Röntgen/Karot/Schmidt + 5 Fotoğraf/Kolon
-4. Lab Teknisyeni → Karot Sonuçları (fb/fck otomatik)
-5. Raportör → Tüm Veriler + Fotoğraf İndirme + YAPNET Analizi
-6. Muhasebe → Mali İşlemler
+3. Saha Ekibi → Sıyırma (Kolon/Perde) + 5 Fotoğraf/Kolon
+4. Saha Ekibi → Röntgen (Kolon/Perde) + 2 Fotoğraf/Eleman
+5. Saha Ekibi → Schmidt (Otomatik R1-R10) + Karot (Otomatik fb/fck)
+6. Lab Teknisyeni → Karot Sonuçları İnceleme
+7. Raportör → Tüm Veriler + Fotoğraf İndirme + YAPNET Analizi
+8. Muhasebe → Mali İşlemler
 ```
 
-## 🎯 Tamamlanan Özellikler
+## 🎯 100% Tamamlanan Özellikler
 
-### Temel Sistem
+### Temel Sistem ✅
 ✅ Rol bazlı kullanıcı sistemi (6 rol)  
 ✅ Güvenli giriş sistemi (Token tabanlı)  
 ✅ Koordinatör paneli (İş kaydı, ajanda)  
@@ -62,7 +85,7 @@
 ✅ Otomatik iş numarası  
 ✅ Bildirim sistemi  
 
-### Rölöve Modülü
+### Rölöve Modülü ✅
 ✅ Kamera/galeri ile rölöve ekleme  
 ✅ İnceleme katı seçimi (10B - 30K)  
 ✅ Kolon/perde sayısı ve boyutları  
@@ -70,19 +93,38 @@
 ✅ Kat yükseklikleri girişi  
 ✅ Boyut değiştirme (yön tersi için)  
 
-### Sıyırma Modülü
+### Sıyırma Modülü ✅
 ✅ Alt sekmeler (Kolon/Perde)  
-✅ Detaylı kolon sıyırma formu:
-  - Kolon kodu (rölöveden dropdown)
-  - Geniş/dar yüzey (otomatik)
-  - Donatı çapı, etriye çapı
-  - Etriye aralığı, pas payı
-  - Okunan çap (korozyon)
-  - 5 fotoğraf (kamera/galeri)
+✅ Detaylı kolon sıyırma formu  
+✅ 5 fotoğraf türü (kamera/galeri)  
 ✅ Kaydedilmiş kolonlar listesi  
 ✅ Fotoğraf görüntüleme/indirme  
+✅ Otomatik boyut doldurma  
 
-### Fotoğraf Sistemi
+### Röntgen Modülü ✅ (YENİ!)
+✅ Alt sekmeler (Kolon/Perde)  
+✅ Rölöve dropdown entegrasyonu  
+✅ 2 röntgen fotoğrafı/eleman  
+✅ Donatı sayısı, çapı, sargı aralığı  
+✅ Fotoğraf görüntüleme/indirme  
+
+### Schmidt Modülü ✅ (YENİ!)
+✅ Otomatik R1-R10 değer üretici  
+✅ Özelleştirilebilir sapma aralığı  
+✅ Gerçek zamanlı ortalama hesaplama  
+✅ Eleman tipi seçimi  
+✅ Temizleme butonu  
+✅ Görsel feedback  
+
+### Karot Modülü ✅ (YENİ!)
+✅ Otomatik fb hesaplama  
+✅ Otomatik fck tahmini  
+✅ Gerçek zamanlı hesaplama  
+✅ Formül gösterimi  
+✅ Eleman kodu ilişkilendirme  
+✅ Karot var/yok durumu  
+
+### Fotoğraf Sistemi ✅
 ✅ Otomatik sıkıştırma (800px, 0.7 quality)  
 ✅ Mobil kamera entegrasyonu  
 ✅ Galeri seçimi  
@@ -92,12 +134,8 @@
 ✅ Tekli/toplu indirme  
 ✅ Modal görüntüleme  
 
-### Hesaplama Fonksiyonları
-✅ Schmidt otomatik değer üretimi (hazır)  
-✅ Karot fb/fck hesaplama (hazır)  
-
-### Veritabanı
-✅ 18 tablo (users, projects, roloove, kolon_tanimlari, kolon_siyirma, fotograflar...)  
+### Veritabanı ✅
+✅ 18 tablo (users, projects, roloove, kolon_tanimlari, kolon_siyirma, kolon_rontgen, perde_rontgen, fotograflar, schmidt, karot...)  
 ✅ 3 migration dosyası  
 ✅ İndeksler ve foreign key'ler  
 
