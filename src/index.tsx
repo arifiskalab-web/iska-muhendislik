@@ -587,6 +587,76 @@ app.put('/api/roloove/kolon/:kolonId', async (c) => {
   return c.json({ success: true })
 })
 
+// ==================== PHOTO API ====================
+
+// Upload photo
+app.post('/api/photos', async (c) => {
+  const { DB } = c.env
+  const authHeader = c.req.header('Authorization')
+  const token = authHeader?.substring(7) || ''
+  const userId = parseInt(atob(token).split(':')[0])
+
+  const data = await c.req.json()
+
+  const result = await DB.prepare(`
+    INSERT INTO fotograflar (
+      project_id, eleman_tipi, eleman_id, eleman_kodu, 
+      foto_tipi, foto_data, foto_adi, dosya_boyutu, created_by
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    data.project_id,
+    data.eleman_tipi,
+    data.eleman_id,
+    data.eleman_kodu,
+    data.foto_tipi,
+    data.foto_data,
+    data.foto_adi,
+    data.dosya_boyutu || 0,
+    userId
+  ).run()
+
+  return c.json({ success: true, photo_id: result.meta.last_row_id })
+})
+
+// Get photos for element
+app.get('/api/photos/:projectId/:elemanKodu', async (c) => {
+  const { DB } = c.env
+  const projectId = c.req.param('projectId')
+  const elemanKodu = c.req.param('elemanKodu')
+
+  const { results } = await DB.prepare(`
+    SELECT * FROM fotograflar 
+    WHERE project_id = ? AND eleman_kodu = ?
+    ORDER BY foto_tipi
+  `).bind(projectId, elemanKodu).all()
+
+  return c.json({ photos: results || [] })
+})
+
+// Get all photos for project (for reporter download)
+app.get('/api/photos/project/:projectId', async (c) => {
+  const { DB } = c.env
+  const projectId = c.req.param('projectId')
+
+  const { results } = await DB.prepare(`
+    SELECT * FROM fotograflar 
+    WHERE project_id = ?
+    ORDER BY eleman_kodu, foto_tipi
+  `).bind(projectId).all()
+
+  return c.json({ photos: results || [] })
+})
+
+// Delete photo
+app.delete('/api/photos/:id', async (c) => {
+  const { DB } = c.env
+  const photoId = c.req.param('id')
+
+  await DB.prepare('DELETE FROM fotograflar WHERE id = ?').bind(photoId).run()
+
+  return c.json({ success: true })
+})
+
 // ==================== FRONTEND ROUTES ====================
 
 // Main page - Login or Dashboard

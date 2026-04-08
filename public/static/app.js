@@ -94,8 +94,20 @@ const api = {
     data
   }),
   
-  getReporters: () => api.call('/users/reporters')
-    method: 'PUT'
+  getReporters: () => api.call('/users/reporters'),
+  
+  // Photo APIs
+  uploadPhoto: (data) => api.call('/photos', {
+    method: 'POST',
+    data
+  }),
+  
+  getPhotos: (projectId, elemanKodu) => api.call(`/photos/${projectId}/${elemanKodu}`),
+  
+  getAllPhotos: (projectId) => api.call(`/photos/project/${projectId}`),
+  
+  deletePhoto: (id) => api.call(`/photos/${id}`, {
+    method: 'DELETE'
   })
 };
 
@@ -738,6 +750,11 @@ async function showFieldDataTab(content, dataType) {
 }
 
 async function showSiyirmaForm(content) {
+  // Load rölöve to get kolon kodları
+  const rolooveData = await api.getRoloove(selectedProject.id);
+  const kolonKodlari = rolooveData.kolon_tanimlari || [];
+  const perdeKodlari = rolooveData.perde_tanimlari || [];
+  
   const kolonData = await api.getFieldData('kolon-siyirma', selectedProject.id);
   const perdeData = await api.getFieldData('perde-siyirma', selectedProject.id);
   
@@ -748,19 +765,314 @@ async function showSiyirmaForm(content) {
         <p class="text-sm text-gray-600">${selectedProject.adres}</p>
       </div>
       
-      <!-- Kolon Sıyırma -->
-      <div class="bg-white rounded-lg shadow-lg p-6">
-        <h3 class="text-xl font-bold mb-4">
-          <i class="fas fa-columns mr-2"></i>Kolon Sıyırma
-        </h3>
+      <!-- Alt Sekmeler -->
+      <div class="bg-white rounded-lg shadow">
+        <div class="flex border-b">
+          <button onclick="showSiyirmaSubTab('kolon')" id="siyirma-sub-kolon" 
+                  class="flex-1 px-6 py-3 font-semibold border-b-2 border-blue-600 text-blue-600">
+            <i class="fas fa-columns mr-2"></i>Kolon Sıyırma
+          </button>
+          <button onclick="showSiyirmaSubTab('perde')" id="siyirma-sub-perde" 
+                  class="flex-1 px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
+            <i class="fas fa-th-large mr-2"></i>Perde Sıyırma
+          </button>
+        </div>
+        <div id="siyirma-sub-content" class="p-6"></div>
+      </div>
+    </div>
+  `;
+  
+  // Store data globally for sub tabs
+  window.siyirmaKolonKodlari = kolonKodlari;
+  window.siyirmaPerdeKodlari = perdeKodlari;
+  window.siyirmaKolonData = kolonData;
+  window.siyirmaPerdeData = perdeData;
+  
+  showSiyirmaSubTab('kolon');
+}
+
+window.showSiyirmaSubTab = function(subTab) {
+  // Update tab styling
+  document.querySelectorAll('[id^="siyirma-sub-"]').forEach(tab => {
+    tab.classList.remove('border-blue-600', 'text-blue-600', 'border-b-2');
+    tab.classList.add('text-gray-600');
+  });
+  document.getElementById(`siyirma-sub-${subTab}`).classList.add('border-blue-600', 'text-blue-600', 'border-b-2');
+  document.getElementById(`siyirma-sub-${subTab}`).classList.remove('text-gray-600');
+  
+  const content = document.getElementById('siyirma-sub-content');
+  
+  if (subTab === 'kolon') {
+    showKolonSiyirmaForm(content);
+  } else {
+    showPerdeSiyirmaForm(content);
+  }
+};
+
+function showKolonSiyirmaForm(content) {
+  const kolonKodlari = window.siyirmaKolonKodlari || [];
+  const kolonData = window.siyirmaKolonData || { data: [] };
+  
+  const kolonOptions = kolonKodlari.map(k => 
+    `<option value="${k.kolon_kodu}">${k.kolon_kodu} (${k.genis_yuzey}x${k.dar_yuzey} cm)</option>`
+  ).join('');
+  
+  content.innerHTML = `
+    <div class="space-y-4">
+      <h4 class="text-lg font-bold">Yeni Kolon Sıyırma Ekle</h4>
+      
+      <form id="kolonSiyirmaForm" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Kolon Kodu *</label>
+            <select name="kolon_kodu" id="kolonKoduSelect" class="w-full px-3 py-2 border rounded" required>
+              <option value="">Seçiniz</option>
+              ${kolonOptions}
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Geniş Yüzey (cm)</label>
+            <input type="number" step="0.01" name="genis_yuzey" id="kolonGenisYuzey" class="w-full px-3 py-2 border rounded" readonly />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Dar Yüzey (cm)</label>
+            <input type="number" step="0.01" name="dar_yuzey" id="kolonDarYuzey" class="w-full px-3 py-2 border rounded" readonly />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Donatı Çapı</label>
+            <input type="text" name="donati_capi" placeholder="Ø14, Ø16..." class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Etriye Çapı</label>
+            <input type="text" name="etriye_capi" placeholder="Ø8, Ø10..." class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Etriye Aralığı (cm)</label>
+            <input type="number" step="0.01" name="etriye_aralik" class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Pas Payı (cm)</label>
+            <input type="number" step="0.01" name="pas_payi" class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Okunan Çap (Korozyon)</label>
+            <input type="text" name="okunan_cap" placeholder="Ø12..." class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div class="md:col-span-2 lg:col-span-3">
+            <label class="block text-sm font-medium mb-1">Notlar</label>
+            <input type="text" name="notlar" class="w-full px-3 py-2 border rounded" />
+          </div>
+        </div>
         
-        <form id="kolonSiyirmaForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <input type="text" name="kolon_no" placeholder="Kolon No" class="px-3 py-2 border rounded" required />
-          <input type="text" name="kolon_boyutlari" placeholder="Boyutlar (örn: 30x30)" class="px-3 py-2 border rounded" />
-          <input type="text" name="donatı_çapı" placeholder="Donatı Çapı" class="px-3 py-2 border rounded" />
-          <input type="number" name="adet" placeholder="Adet" class="px-3 py-2 border rounded" />
-          <input type="text" name="beton_sinifi" placeholder="Beton Sınıfı" class="px-3 py-2 border rounded" />
-          <input type="text" name="notlar" placeholder="Notlar" class="px-3 py-2 border rounded" />
+        <!-- Fotoğraflar -->
+        <div class="border-t pt-4 mt-4">
+          <h5 class="font-semibold mb-3">Fotoğraflar</h5>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${generatePhotoUploadSection('gorunum', 'Kolon Görünümü')}
+            ${generatePhotoUploadSection('donati_capi', 'Donatı Çapı')}
+            ${generatePhotoUploadSection('etriye_capi', 'Etriye Çapı')}
+            ${generatePhotoUploadSection('korozyon', 'Korozyon')}
+            ${generatePhotoUploadSection('etriye_araligi', 'Etriye Aralığı')}
+          </div>
+        </div>
+        
+        <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          <i class="fas fa-plus mr-2"></i>Kaydet
+        </button>
+      </form>
+      
+      <!-- Kaydedilmiş Kolonlar -->
+      <div class="mt-6">
+        <h4 class="text-lg font-bold mb-3">Kaydedilmiş Kolonlar</h4>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-100">
+              <tr>
+                <th class="px-3 py-2 text-left">Kolon Kodu</th>
+                <th class="px-3 py-2 text-left">Boyutlar</th>
+                <th class="px-3 py-2 text-left">Donatı</th>
+                <th class="px-3 py-2 text-left">Etriye</th>
+                <th class="px-3 py-2 text-left">Fotoğraflar</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${kolonData.data?.map(d => `
+                <tr class="border-t">
+                  <td class="px-3 py-2 font-mono font-bold">${d.kolon_kodu || '-'}</td>
+                  <td class="px-3 py-2">${d.genis_yuzey}x${d.dar_yuzey} cm</td>
+                  <td class="px-3 py-2">${d.donati_capi || '-'}</td>
+                  <td class="px-3 py-2">${d.etriye_capi || '-'} / ${d.etriye_aralik || '-'} cm</td>
+                  <td class="px-3 py-2">
+                    <button onclick="viewKolonPhotos('${d.kolon_kodu}')" class="text-blue-600 hover:underline">
+                      <i class="fas fa-images"></i> Görüntüle
+                    </button>
+                  </td>
+                </tr>
+              `).join('') || '<tr><td colspan="5" class="text-center py-4 text-gray-500">Henüz veri yok</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Auto-fill boyutlar when kolon selected
+  document.getElementById('kolonKoduSelect').addEventListener('change', (e) => {
+    const selectedKolon = kolonKodlari.find(k => k.kolon_kodu === e.target.value);
+    if (selectedKolon) {
+      document.getElementById('kolonGenisYuzey').value = selectedKolon.genis_yuzey || '';
+      document.getElementById('kolonDarYuzey').value = selectedKolon.dar_yuzey || '';
+    }
+  });
+  
+  // Form submit
+  document.getElementById('kolonSiyirmaForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveKolonSiyirma(e.target);
+  });
+}
+
+function generatePhotoUploadSection(fotoTipi, label) {
+  const fotoTipiSafe = fotoTipi.replace(/_/g, '-');
+  return `
+    <div class="border rounded p-3">
+      <label class="block text-xs font-semibold mb-2">${label}</label>
+      <div class="flex gap-1 mb-2">
+        <button type="button" onclick="capturePhotoForForm('${fotoTipi}')" 
+                class="flex-1 bg-green-600 text-white text-xs py-1 px-2 rounded">
+          <i class="fas fa-camera"></i>
+        </button>
+        <button type="button" onclick="selectPhotoForForm('${fotoTipi}')" 
+                class="flex-1 bg-blue-600 text-white text-xs py-1 px-2 rounded">
+          <i class="fas fa-images"></i>
+        </button>
+      </div>
+      <div id="photo-preview-${fotoTipiSafe}" class="text-xs text-gray-500"></div>
+      <input type="hidden" id="photo-data-${fotoTipiSafe}" name="foto_${fotoTipi}" />
+    </div>
+  `;
+}
+
+window.capturePhotoForForm = async function(fotoTipi) {
+  const kolonKodu = document.getElementById('kolonKoduSelect').value;
+  if (!kolonKodu) {
+    alert('Lütfen önce kolon kodu seçiniz');
+    return;
+  }
+  
+  try {
+    const photo = await capturePhoto(kolonKodu, fotoTipi);
+    const fotoTipiSafe = fotoTipi.replace(/_/g, '-');
+    document.getElementById(`photo-data-${fotoTipiSafe}`).value = JSON.stringify(photo);
+    document.getElementById(`photo-preview-${fotoTipiSafe}`).innerHTML = 
+      `<i class="fas fa-check text-green-600"></i> ${(photo.size / 1024).toFixed(0)} KB`;
+  } catch (error) {
+    console.error('Fotoğraf çekme hatası:', error);
+  }
+};
+
+window.selectPhotoForForm = async function(fotoTipi) {
+  const kolonKodu = document.getElementById('kolonKoduSelect').value;
+  if (!kolonKodu) {
+    alert('Lütfen önce kolon kodu seçiniz');
+    return;
+  }
+  
+  try {
+    const photo = await selectPhotoFromGallery(kolonKodu, fotoTipi);
+    const fotoTipiSafe = fotoTipi.replace(/_/g, '-');
+    document.getElementById(`photo-data-${fotoTipiSafe}`).value = JSON.stringify(photo);
+    document.getElementById(`photo-preview-${fotoTipiSafe}`).innerHTML = 
+      `<i class="fas fa-check text-green-600"></i> ${(photo.size / 1024).toFixed(0)} KB`;
+  } catch (error) {
+    console.error('Fotoğraf seçme hatası:', error);
+  }
+};
+
+async function saveKolonSiyirma(form) {
+  const formData = new FormData(form);
+  const data = {};
+  formData.forEach((value, key) => {
+    if (!key.startsWith('foto_')) {
+      data[key] = value;
+    }
+  });
+  
+  try {
+    // Save kolon siyirma
+    const result = await api.createFieldData('kolon-siyirma', selectedProject.id, data);
+    
+    // Upload photos
+    const fotoTipleri = ['gorunum', 'donati_capi', 'etriye_capi', 'korozyon', 'etriye_araligi'];
+    for (const fotoTipi of fotoTipleri) {
+      const fotoTipiSafe = fotoTipi.replace(/_/g, '-');
+      const photoDataStr = document.getElementById(`photo-data-${fotoTipiSafe}`).value;
+      if (photoDataStr) {
+        const photoData = JSON.parse(photoDataStr);
+        await uploadPhotoToServer(selectedProject.id, 'kolon_siyirma', result.id, photoData);
+      }
+    }
+    
+    alert('Kolon sıyırma başarıyla kaydedildi!');
+    showFieldTab('siyirma');
+  } catch (error) {
+    alert('Hata: ' + error.message);
+  }
+}
+
+function showPerdeSiyirmaForm(content) {
+  content.innerHTML = `
+    <div class="text-center py-8">
+      <p class="text-gray-600">Perde sıyırma formu yakında eklenecek...</p>
+    </div>
+  `;
+}
+
+window.viewKolonPhotos = async function(kolonKodu) {
+  try {
+    const { photos } = await api.getPhotos(selectedProject.id, kolonKodu);
+    
+    if (photos.length === 0) {
+      alert('Bu kolon için fotoğraf bulunamadı.');
+      return;
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
+        <div class="p-4 border-b flex justify-between items-center sticky top-0 bg-white">
+          <h3 class="text-lg font-bold">${kolonKodu} Fotoğrafları</h3>
+          <button onclick="this.closest('.fixed').remove()" class="text-gray-600 hover:text-gray-900">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          ${photos.map(p => `
+            <div class="border rounded p-2">
+              <p class="font-semibold text-sm mb-2">${p.foto_adi}</p>
+              <img src="${p.foto_data}" class="w-full rounded mb-2" />
+              <button onclick="downloadPhoto('${p.foto_data}', '${p.foto_adi}')" 
+                      class="w-full bg-blue-600 text-white py-1 rounded text-sm">
+                <i class="fas fa-download mr-1"></i>İndir
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  } catch (error) {
+    alert('Fotoğraflar yüklenirken hata oluştu.');
+  }
           <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
             <i class="fas fa-plus mr-2"></i>Ekle
           </button>
@@ -1712,4 +2024,224 @@ window.calculateKarotValues = function(cap_mm, kirilma_yuku_kn) {
     fb_mpa: fb_mpa.toFixed(2),
     fck_mpa: fck_mpa.toFixed(2)
   };
+};
+
+// ==================== PHOTO UTILITY FUNCTIONS ====================
+
+// Compress and resize image
+window.compressImage = async function(file, maxWidth = 800, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Resize if needed
+        if (width > maxWidth) {
+          height = height * (maxWidth / width);
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Convert to compressed base64
+        const compressedData = canvas.toDataURL('image/jpeg', quality);
+        
+        // Calculate size
+        const sizeInBytes = Math.round((compressedData.length * 3) / 4);
+        
+        resolve({
+          data: compressedData,
+          size: sizeInBytes,
+          width: width,
+          height: height
+        });
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+// Capture photo from camera
+window.capturePhoto = async function(elemanKodu, fotoTipi) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } // Use back camera on mobile
+      });
+      
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50';
+      modal.innerHTML = `
+        <div class="w-full h-full flex flex-col">
+          <div class="flex-1 flex items-center justify-center">
+            <video id="photoCapture" autoplay playsinline class="max-w-full max-h-full"></video>
+          </div>
+          <div class="p-4 bg-gray-900 flex gap-2">
+            <button onclick="takePhoto()" class="flex-1 bg-green-600 text-white py-3 rounded-lg text-lg font-semibold">
+              <i class="fas fa-camera mr-2"></i>Çek
+            </button>
+            <button onclick="cancelPhotoCapture()" class="flex-1 bg-red-600 text-white py-3 rounded-lg text-lg font-semibold">
+              <i class="fas fa-times mr-2"></i>İptal
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+      const video = modal.querySelector('#photoCapture');
+      video.srcObject = stream;
+      
+      window.photoStream = stream;
+      window.photoModal = modal;
+      window.photoResolve = resolve;
+      window.photoReject = reject;
+      window.photoElemanKodu = elemanKodu;
+      window.photoFotoTipi = fotoTipi;
+    } catch (error) {
+      reject(new Error('Kamera erişimi reddedildi'));
+    }
+  });
+};
+
+window.takePhoto = async function() {
+  const video = document.getElementById('photoCapture');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  
+  // Compress
+  canvas.toBlob(async (blob) => {
+    const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+    const compressed = await compressImage(file);
+    
+    cancelPhotoCapture();
+    
+    if (window.photoResolve) {
+      window.photoResolve({
+        data: compressed.data,
+        size: compressed.size,
+        elemanKodu: window.photoElemanKodu,
+        fotoTipi: window.photoFotoTipi
+      });
+    }
+  }, 'image/jpeg', 0.7);
+};
+
+window.cancelPhotoCapture = function() {
+  if (window.photoStream) {
+    window.photoStream.getTracks().forEach(track => track.stop());
+    window.photoStream = null;
+  }
+  if (window.photoModal) {
+    window.photoModal.remove();
+    window.photoModal = null;
+  }
+  if (window.photoReject) {
+    window.photoReject(new Error('İptal edildi'));
+  }
+};
+
+// Select photo from gallery
+window.selectPhotoFromGallery = async function(elemanKodu, fotoTipi) {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        try {
+          const compressed = await compressImage(file);
+          resolve({
+            data: compressed.data,
+            size: compressed.size,
+            elemanKodu: elemanKodu,
+            fotoTipi: fotoTipi
+          });
+        } catch (error) {
+          reject(error);
+        }
+      } else {
+        reject(new Error('Dosya seçilmedi'));
+      }
+    };
+    input.click();
+  });
+};
+
+// Generate photo name
+window.generatePhotoName = function(elemanKodu, fotoTipi) {
+  const fotoTipleri = {
+    'gorunum': 'kolon_gorunumu',
+    'donati_capi': 'donati_capi',
+    'etriye_capi': 'etriye_capi',
+    'korozyon': 'korozyon',
+    'etriye_araligi': 'etriye_araligi',
+    'rontgen': 'rontgen'
+  };
+  
+  return `${elemanKodu}_${fotoTipleri[fotoTipi] || fotoTipi}.jpg`;
+};
+
+// Upload photo to server
+window.uploadPhotoToServer = async function(projectId, elemanTipi, elemanId, photoData) {
+  const fotoAdi = generatePhotoName(photoData.elemanKodu, photoData.fotoTipi);
+  
+  const data = {
+    project_id: projectId,
+    eleman_tipi: elemanTipi,
+    eleman_id: elemanId,
+    eleman_kodu: photoData.elemanKodu,
+    foto_tipi: photoData.fotoTipi,
+    foto_data: photoData.data,
+    foto_adi: fotoAdi,
+    dosya_boyutu: photoData.size
+  };
+  
+  return await api.uploadPhoto(data);
+};
+
+// Download all photos for project (for reporter)
+window.downloadAllPhotos = async function(projectId) {
+  try {
+    const { photos } = await api.getAllPhotos(projectId);
+    
+    if (photos.length === 0) {
+      alert('Bu proje için fotoğraf bulunamadı.');
+      return;
+    }
+    
+    // Create zip file (using JSZip would be ideal, but we'll download individually for now)
+    for (const photo of photos) {
+      const link = document.createElement('a');
+      link.href = photo.foto_data;
+      link.download = photo.foto_adi;
+      link.click();
+      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay between downloads
+    }
+    
+    alert(`${photos.length} fotoğraf indirildi.`);
+  } catch (error) {
+    alert('Fotoğraflar indirilirken hata oluştu: ' + error.message);
+  }
+};
+
+// Download single photo
+window.downloadPhoto = function(photoData, photoName) {
+  const link = document.createElement('a');
+  link.href = photoData;
+  link.download = photoName;
+  link.click();
 };
