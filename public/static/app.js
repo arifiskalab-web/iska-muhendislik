@@ -79,6 +79,23 @@ const api = {
   
   markNotificationRead: (id) => api.call(`/notifications/${id}/read`, {
     method: 'PUT'
+  }),
+  
+  // Rölöve APIs
+  getRoloove: (projectId) => api.call(`/roloove/${projectId}`),
+  
+  createRoloove: (projectId, data) => api.call(`/roloove/${projectId}`, {
+    method: 'POST',
+    data
+  }),
+  
+  updateKolon: (kolonId, data) => api.call(`/roloove/kolon/${kolonId}`, {
+    method: 'PUT',
+    data
+  }),
+  
+  getReporters: () => api.call('/users/reporters')
+    method: 'PUT'
   })
 };
 
@@ -275,6 +292,9 @@ function showFieldTeamDashboard() {
           <div class="flex space-x-1 overflow-x-auto">
             <button onclick="showFieldTab('gorevler')" id="field-tab-gorevler" class="px-6 py-3 font-semibold border-b-2 border-green-600 text-green-600 whitespace-nowrap">
               <i class="fas fa-tasks mr-2"></i>Görevlerim
+            </button>
+            <button onclick="showFieldTab('roloove')" id="field-tab-roloove" class="px-6 py-3 font-semibold text-gray-600 hover:text-green-600 whitespace-nowrap">
+              <i class="fas fa-drafting-compass mr-2"></i>Rölöve
             </button>
             <button onclick="showFieldTab('siyirma')" id="field-tab-siyirma" class="px-6 py-3 font-semibold text-gray-600 hover:text-green-600 whitespace-nowrap">
               <i class="fas fa-columns mr-2"></i>Sıyırma
@@ -637,6 +657,8 @@ function showFieldTab(tabName) {
   
   if (tabName === 'gorevler') {
     showGorevlerTab(content);
+  } else if (tabName === 'roloove') {
+    showRolooveTab(content);
   } else {
     showFieldDataTab(content, tabName);
   }
@@ -1177,3 +1199,517 @@ window.logout = logout;
 window.showTab = showTab;
 window.showFieldTab = showFieldTab;
 window.selectProjectForFieldWork = selectProjectForFieldWork;
+
+// ==================== RÖLÖVE FUNCTIONS ====================
+
+let currentRoloove = null;
+let currentSubTab = 'kolon'; // 'kolon' or 'perde' for siyirma/rontgen
+
+async function showRolooveTab(content) {
+  if (!selectedProject) {
+    content.innerHTML = `
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+        <i class="fas fa-exclamation-triangle text-yellow-600 text-3xl mb-3"></i>
+        <p class="text-gray-700">Lütfen önce "Görevlerim" sekmesinden bir iş seçiniz.</p>
+        <button onclick="showFieldTab('gorevler')" class="mt-4 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+          Görevlere Dön
+        </button>
+      </div>
+    `;
+    return;
+  }
+  
+  // Load rölöve if exists
+  const rolooveData = await api.getRoloove(selectedProject.id);
+  currentRoloove = rolooveData.roloove;
+  
+  if (!currentRoloove) {
+    // Show rölöve creation form
+    showRolooveCreateForm(content);
+  } else {
+    // Show existing rölöve
+    showRolooveView(content, rolooveData);
+  }
+}
+
+function showRolooveCreateForm(content) {
+  content.innerHTML = `
+    <div class="space-y-6">
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 class="font-bold text-lg">Seçili İş: ${selectedProject.is_no}</h3>
+        <p class="text-sm text-gray-600">${selectedProject.adres}</p>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h3 class="text-xl font-bold mb-4">
+          <i class="fas fa-drafting-compass mr-2"></i>Rölöve Bilgileri
+        </h3>
+        
+        <form id="rolooveForm" class="space-y-4">
+          <!-- Rölöve resmi yükleme -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Rölöve Fotoğrafı (Kamera veya Galeri)
+            </label>
+            <div class="flex gap-2">
+              <button type="button" onclick="captureRolooveImage()" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                <i class="fas fa-camera mr-2"></i>Kamera ile Çek
+              </button>
+              <label class="flex-1 bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 text-center cursor-pointer">
+                <i class="fas fa-images mr-2"></i>Galeriden Seç
+                <input type="file" id="rolooveImageInput" accept="image/*" class="hidden" onchange="handleRolooveImage(event)" />
+              </label>
+            </div>
+            <div id="rolooveImagePreview" class="mt-3"></div>
+            <input type="hidden" id="rolooveImageData" name="roloove_image" />
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">İnceleme Katı *</label>
+              <select name="inceleme_kati" id="incelemeKatiSelect" class="w-full px-3 py-2 border rounded" required>
+                <option value="">Seçiniz</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Kat Sayısı *</label>
+              <input type="number" name="kat_sayisi" id="katSayisiInput" min="1" max="30" class="w-full px-3 py-2 border rounded" required />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Bodrum Kat Sayısı</label>
+              <input type="number" name="bodrum_kat_sayisi" id="bodrumKatInput" min="0" max="10" value="0" class="w-full px-3 py-2 border rounded" />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Kolon Sayısı *</label>
+              <input type="number" name="kolon_sayisi" id="kolonSayisiInput" min="1" class="w-full px-3 py-2 border rounded" required />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Perde Sayısı</label>
+              <input type="number" name="perde_sayisi" id="perdeSayisiInput" min="0" value="0" class="w-full px-3 py-2 border rounded" />
+            </div>
+          </div>
+          
+          <!-- Kat Yükseklikleri -->
+          <div id="katYukseklikleriContainer" class="hidden">
+            <h4 class="font-semibold mb-2">Kat Yükseklikleri (metre)</h4>
+            <div id="katYukseklikleriInputs" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+          </div>
+          
+          <!-- Kolon Boyutları -->
+          <div id="kolonBoyutlariContainer" class="hidden">
+            <h4 class="font-semibold mb-2">Kolon Boyutları (cm)</h4>
+            <div id="kolonBoyutlariInputs" class="space-y-2"></div>
+          </div>
+          
+          <div class="flex justify-end space-x-4 mt-6">
+            <button type="button" onclick="showFieldTab('gorevler')" class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+              İptal
+            </button>
+            <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+              <i class="fas fa-save mr-2"></i>Kaydet
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  
+  // Generate inceleme katı options
+  generateIncelemeKatiOptions();
+  
+  // Listen to kat sayısı changes
+  document.getElementById('katSayisiInput').addEventListener('input', generateKatYukseklikleri);
+  document.getElementById('bodrumKatInput').addEventListener('input', generateKatYukseklikleri);
+  document.getElementById('kolonSayisiInput').addEventListener('input', generateKolonBoyutlari);
+  document.getElementById('incelemeKatiSelect').addEventListener('change', generateKolonKodlari);
+  
+  // Form submit
+  document.getElementById('rolooveForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveRoloove();
+  });
+}
+
+function generateIncelemeKatiOptions() {
+  const select = document.getElementById('incelemeKatiSelect');
+  let options = '<option value="">Seçiniz</option>';
+  
+  // Bodrum katlar
+  for (let i = 10; i >= 1; i--) {
+    options += `<option value="${i}. Bodrum Kat">${i}. Bodrum Kat</option>`;
+  }
+  
+  // Zemin kat
+  options += '<option value="Zemin Kat">Zemin Kat</option>';
+  
+  // Normal katlar
+  for (let i = 1; i <= 30; i++) {
+    options += `<option value="${i}. Kat">${i}. Kat</option>`;
+  }
+  
+  select.innerHTML = options;
+}
+
+function generateKatYukseklikleri() {
+  const katSayisi = parseInt(document.getElementById('katSayisiInput').value) || 0;
+  const bodrumKat = parseInt(document.getElementById('bodrumKatInput').value) || 0;
+  
+  if (katSayisi === 0) {
+    document.getElementById('katYukseklikleriContainer').classList.add('hidden');
+    return;
+  }
+  
+  document.getElementById('katYukseklikleriContainer').classList.remove('hidden');
+  const container = document.getElementById('katYukseklikleriInputs');
+  let html = '';
+  
+  // Bodrum katlar
+  for (let i = bodrumKat; i >= 1; i--) {
+    html += `
+      <div>
+        <label class="text-xs text-gray-600">${i}. Bodrum</label>
+        <input type="number" step="0.01" class="w-full px-2 py-1 border rounded text-sm" 
+               data-kat-no="${-i}" data-kat-adi="${i}. Bodrum Kat" placeholder="m" />
+      </div>
+    `;
+  }
+  
+  // Zemin kat
+  html += `
+    <div>
+      <label class="text-xs text-gray-600">Zemin Kat</label>
+      <input type="number" step="0.01" class="w-full px-2 py-1 border rounded text-sm" 
+             data-kat-no="0" data-kat-adi="Zemin Kat" placeholder="m" />
+    </div>
+  `;
+  
+  // Normal katlar
+  for (let i = 1; i <= katSayisi; i++) {
+    html += `
+      <div>
+        <label class="text-xs text-gray-600">${i}. Kat</label>
+        <input type="number" step="0.01" class="w-full px-2 py-1 border rounded text-sm" 
+               data-kat-no="${i}" data-kat-adi="${i}. Kat" placeholder="m" />
+      </div>
+    `;
+  }
+  
+  container.innerHTML = html;
+}
+
+function generateKolonBoyutlari() {
+  const kolonSayisi = parseInt(document.getElementById('kolonSayisiInput').value) || 0;
+  
+  if (kolonSayisi === 0) {
+    document.getElementById('kolonBoyutlariContainer').classList.add('hidden');
+    return;
+  }
+  
+  generateKolonKodlari();
+}
+
+function generateKolonKodlari() {
+  const kolonSayisi = parseInt(document.getElementById('kolonSayisiInput').value) || 0;
+  const incelemeKati = document.getElementById('incelemeKatiSelect').value;
+  
+  if (kolonSayisi === 0 || !incelemeKati) {
+    document.getElementById('kolonBoyutlariContainer').classList.add('hidden');
+    return;
+  }
+  
+  document.getElementById('kolonBoyutlariContainer').classList.remove('hidden');
+  
+  // Determine prefix based on inceleme katı
+  let prefix = 'S';
+  if (incelemeKati === 'Zemin Kat') {
+    prefix = 'SZ';
+  } else if (incelemeKati.includes('Bodrum')) {
+    const bodrumNo = incelemeKati.match(/\d+/)[0];
+    prefix = `SB${bodrumNo}`;
+  } else {
+    const katNo = incelemeKati.match(/\d+/)[0];
+    prefix = `S${katNo}`;
+  }
+  
+  const container = document.getElementById('kolonBoyutlariInputs');
+  let html = '';
+  
+  for (let i = 1; i <= kolonSayisi; i++) {
+    const kolonKodu = `${prefix}${String(i).padStart(2, '0')}`;
+    html += `
+      <div class="flex items-center gap-2 p-2 bg-gray-50 rounded">
+        <span class="font-mono font-bold text-sm w-16">${kolonKodu}</span>
+        <input type="number" step="0.01" placeholder="Geniş (cm)" 
+               class="w-24 px-2 py-1 border rounded text-sm kolon-genis" 
+               data-kolon-kod="${kolonKodu}" />
+        <span class="text-gray-400">x</span>
+        <input type="number" step="0.01" placeholder="Dar (cm)" 
+               class="w-24 px-2 py-1 border rounded text-sm kolon-dar" 
+               data-kolon-kod="${kolonKodu}" />
+        <button type="button" onclick="swapKolonDimensions('${kolonKodu}')" 
+                class="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">
+          <i class="fas fa-exchange-alt"></i> Değiştir
+        </button>
+      </div>
+    `;
+  }
+  
+  container.innerHTML = html;
+  
+  // Copy first value to all
+  container.addEventListener('input', (e) => {
+    if (e.target.classList.contains('kolon-genis') || e.target.classList.contains('kolon-dar')) {
+      const isGenis = e.target.classList.contains('kolon-genis');
+      const value = e.target.value;
+      const allInputs = container.querySelectorAll(isGenis ? '.kolon-genis' : '.kolon-dar');
+      
+      // Only copy if it's the first input and it's being filled for the first time
+      if (allInputs[0] === e.target && value) {
+        let shouldCopy = true;
+        for (let i = 1; i < allInputs.length; i++) {
+          if (allInputs[i].value) {
+            shouldCopy = false;
+            break;
+          }
+        }
+        
+        if (shouldCopy) {
+          for (let i = 1; i < allInputs.length; i++) {
+            allInputs[i].value = value;
+          }
+        }
+      }
+    }
+  });
+}
+
+window.swapKolonDimensions = function(kolonKodu) {
+  const genisInput = document.querySelector(`input.kolon-genis[data-kolon-kod="${kolonKodu}"]`);
+  const darInput = document.querySelector(`input.kolon-dar[data-kolon-kod="${kolonKodu}"]`);
+  
+  const temp = genisInput.value;
+  genisInput.value = darInput.value;
+  darInput.value = temp;
+};
+
+async function saveRoloove() {
+  const incelemeKati = document.getElementById('incelemeKatiSelect').value;
+  const katSayisi = parseInt(document.getElementById('katSayisiInput').value);
+  const bodrumKatSayisi = parseInt(document.getElementById('bodrumKatInput').value) || 0;
+  const kolonSayisi = parseInt(document.getElementById('kolonSayisiInput').value);
+  const perdeSayisi = parseInt(document.getElementById('perdeSayisiInput').value) || 0;
+  const rolooveImage = document.getElementById('rolooveImageData').value;
+  
+  // Collect kat yükseklikleri
+  const katYukseklikleri = [];
+  document.querySelectorAll('#katYukseklikleriInputs input').forEach(input => {
+    if (input.value) {
+      katYukseklikleri.push({
+        kat_no: parseInt(input.dataset.katNo),
+        kat_adi: input.dataset.katAdi,
+        yukseklik: parseFloat(input.value)
+      });
+    }
+  });
+  
+  // Collect kolon tanımları
+  const kolonTanimlari = [];
+  const genisInputs = document.querySelectorAll('.kolon-genis');
+  genisInputs.forEach(input => {
+    const kolonKodu = input.dataset.kolonKod;
+    const darInput = document.querySelector(`.kolon-dar[data-kolon-kod="${kolonKodu}"]`);
+    
+    if (input.value && darInput.value) {
+      kolonTanimlari.push({
+        kolon_kodu: kolonKodu,
+        genis_yuzey: parseFloat(input.value),
+        dar_yuzey: parseFloat(darInput.value),
+        yon_ters: 0
+      });
+    }
+  });
+  
+  const data = {
+    roloove_image: rolooveImage,
+    inceleme_kati: incelemeKati,
+    kat_sayisi: katSayisi,
+    bodrum_kat_sayisi: bodrumKatSayisi,
+    kolon_sayisi: kolonSayisi,
+    perde_sayisi: perdeSayisi,
+    kat_yukseklikleri: katYukseklikleri,
+    kolon_tanimlari: kolonTanimlari,
+    perde_tanimlari: [] // TODO: Add perde support
+  };
+  
+  try {
+    await api.createRoloove(selectedProject.id, data);
+    alert('Rölöve başarıyla kaydedildi!');
+    showFieldTab('roloove'); // Reload
+  } catch (error) {
+    alert('Hata oluştu: ' + error.message);
+  }
+}
+
+window.captureRolooveImage = async function() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const video = document.createElement('video');
+    video.srcObject = stream;
+    video.play();
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg p-4 max-w-2xl">
+        <video id="cameraPreview" autoplay class="w-full rounded mb-4"></video>
+        <div class="flex gap-2">
+          <button onclick="takePicture()" class="flex-1 bg-green-600 text-white py-2 rounded">
+            <i class="fas fa-camera mr-2"></i>Fotoğraf Çek
+          </button>
+          <button onclick="closeCamera()" class="flex-1 bg-red-600 text-white py-2 rounded">
+            <i class="fas fa-times mr-2"></i>İptal
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    const modalVideo = modal.querySelector('#cameraPreview');
+    modalVideo.srcObject = stream;
+    
+    window.cameraStream = stream;
+    window.cameraModal = modal;
+  } catch (error) {
+    alert('Kamera erişimi reddedildi veya kamera bulunamadı.');
+  }
+};
+
+window.takePicture = function() {
+  const video = document.getElementById('cameraPreview');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  
+  const imageData = canvas.toDataURL('image/jpeg');
+  document.getElementById('rolooveImageData').value = imageData;
+  
+  const preview = document.getElementById('rolooveImagePreview');
+  preview.innerHTML = `<img src="${imageData}" class="w-full max-w-md rounded border" />`;
+  
+  closeCamera();
+};
+
+window.closeCamera = function() {
+  if (window.cameraStream) {
+    window.cameraStream.getTracks().forEach(track => track.stop());
+    window.cameraStream = null;
+  }
+  if (window.cameraModal) {
+    window.cameraModal.remove();
+    window.cameraModal = null;
+  }
+};
+
+window.handleRolooveImage = function(event) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const imageData = e.target.result;
+      document.getElementById('rolooveImageData').value = imageData;
+      
+      const preview = document.getElementById('rolooveImagePreview');
+      preview.innerHTML = `<img src="${imageData}" class="w-full max-w-md rounded border" />`;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+function showRolooveView(content, rolooveData) {
+  const { roloove, kolon_tanimlari, perde_tanimlari, kat_yukseklikleri } = rolooveData;
+  
+  content.innerHTML = `
+    <div class="space-y-6">
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 class="font-bold text-lg">Seçili İş: ${selectedProject.is_no}</h3>
+        <p class="text-sm text-gray-600">${selectedProject.adres}</p>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h3 class="text-xl font-bold mb-4">
+          <i class="fas fa-drafting-compass mr-2"></i>Rölöve Bilgileri
+        </h3>
+        
+        ${roloove.roloove_image ? `
+          <div class="mb-4">
+            <img src="${roloove.roloove_image}" class="w-full max-w-2xl rounded border" />
+          </div>
+        ` : ''}
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div class="bg-gray-50 p-3 rounded">
+            <p class="text-xs text-gray-600">İnceleme Katı</p>
+            <p class="font-semibold">${roloove.inceleme_kati}</p>
+          </div>
+          <div class="bg-gray-50 p-3 rounded">
+            <p class="text-xs text-gray-600">Kat Sayısı</p>
+            <p class="font-semibold">${roloove.kat_sayisi}</p>
+          </div>
+          <div class="bg-gray-50 p-3 rounded">
+            <p class="text-xs text-gray-600">Kolon Sayısı</p>
+            <p class="font-semibold">${roloove.kolon_sayisi}</p>
+          </div>
+          <div class="bg-gray-50 p-3 rounded">
+            <p class="text-xs text-gray-600">Perde Sayısı</p>
+            <p class="font-semibold">${roloove.perde_sayisi || 0}</p>
+          </div>
+        </div>
+        
+        <div class="mt-6">
+          <h4 class="font-semibold mb-3">Kolon Boyutları</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+            ${kolon_tanimlari.map(k => `
+              <div class="bg-gray-50 p-2 rounded flex items-center justify-between">
+                <span class="font-mono font-bold text-sm">${k.kolon_kodu}</span>
+                <span class="text-sm">${k.genis_yuzey} x ${k.dar_yuzey} cm</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Generate random Schmidt values based on average
+window.generateSchmidtValues = function(avg, range) {
+  const values = [];
+  const min = Math.max(10, avg - range);
+  const max = Math.min(70, avg + range);
+  
+  for (let i = 0; i < 10; i++) {
+    values.push(Math.floor(Math.random() * (max - min + 1)) + min);
+  }
+  
+  return values;
+};
+
+// Calculate Karot fb and fck
+window.calculateKarotValues = function(cap_mm, kirilma_yuku_kn) {
+  const cap_m = cap_mm / 1000;
+  const alan_m2 = Math.PI * Math.pow(cap_m / 2, 2);
+  const kirilma_yuku_n = kirilma_yuku_kn * 1000;
+  
+  const fb_mpa = kirilma_yuku_n / alan_m2 / 1000000; // MPa
+  const fck_mpa = fb_mpa * 0.85; // Approximate conversion
+  
+  return {
+    fb_mpa: fb_mpa.toFixed(2),
+    fck_mpa: fck_mpa.toFixed(2)
+  };
+};

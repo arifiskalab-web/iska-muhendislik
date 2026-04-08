@@ -56,15 +56,57 @@ export interface Agenda {
   created_at?: string;
 }
 
+// Rölöve Interface
+export interface Roloove {
+  id: number;
+  project_id: number;
+  roloove_image?: string;
+  inceleme_kati?: string;
+  kat_sayisi?: number;
+  bodrum_kat_sayisi?: number;
+  kolon_sayisi?: number;
+  perde_sayisi?: number;
+  created_by?: number;
+  created_at?: string;
+}
+
+export interface KatYuksekligi {
+  id: number;
+  roloove_id: number;
+  kat_no: number;
+  kat_adi: string;
+  yukseklik?: number;
+}
+
+export interface KolonTanimi {
+  id: number;
+  roloove_id: number;
+  kolon_kodu: string;
+  genis_yuzey?: number;
+  dar_yuzey?: number;
+  yon_ters?: number;
+}
+
+export interface PerdeTanimi {
+  id: number;
+  roloove_id: number;
+  perde_kodu: string;
+  uzunluk?: number;
+  kalinlik?: number;
+}
+
 // Field Data Interfaces
 export interface KolonSiyirma {
   id: number;
   project_id: number;
-  kolon_no?: string;
-  kolon_boyutlari?: string;
-  donatı_çapı?: string;
-  adet?: number;
-  beton_sinifi?: string;
+  kolon_kodu: string;
+  genis_yuzey?: number;
+  dar_yuzey?: number;
+  donati_capi?: string;
+  etriye_capi?: string;
+  etriye_aralik?: number;
+  pas_payi?: number;
+  okunan_cap?: string;
   notlar?: string;
   created_by?: number;
   created_at?: string;
@@ -73,11 +115,15 @@ export interface KolonSiyirma {
 export interface PerdeSiyirma {
   id: number;
   project_id: number;
-  perde_no?: string;
-  perde_boyutlari?: string;
-  donatı_çapı?: string;
-  adet?: number;
-  beton_sinifi?: string;
+  perde_kodu: string;
+  uzunluk?: number;
+  kalinlik?: number;
+  donati_capi?: string;
+  donati_adedi?: number;
+  etriye_capi?: string;
+  etriye_aralik?: number;
+  pas_payi?: number;
+  okunan_cap?: string;
   notlar?: string;
   created_by?: number;
   created_at?: string;
@@ -86,11 +132,11 @@ export interface PerdeSiyirma {
 export interface KolonRontgen {
   id: number;
   project_id: number;
-  kolon_no?: string;
+  kolon_kodu: string;
   kat?: string;
-  donatı_sayisi?: number;
-  donatı_çapı?: string;
-  sargı_araligi?: string;
+  donati_sayisi?: number;
+  donati_capi?: string;
+  sargi_araligi?: string;
   notlar?: string;
   created_by?: number;
   created_at?: string;
@@ -99,11 +145,11 @@ export interface KolonRontgen {
 export interface PerdeRontgen {
   id: number;
   project_id: number;
-  perde_no?: string;
+  perde_kodu: string;
   kat?: string;
-  donatı_sayisi?: number;
-  donatı_çapı?: string;
-  sargı_araligi?: string;
+  donati_sayisi?: number;
+  donati_capi?: string;
+  sargi_araligi?: string;
   notlar?: string;
   created_by?: number;
   created_at?: string;
@@ -112,13 +158,16 @@ export interface PerdeRontgen {
 export interface Karot {
   id: number;
   project_id: number;
-  numune_no?: string;
-  lokasyon?: string;
+  karot_no?: string;
+  eleman_kodu?: string;
   kat?: string;
-  cap?: number;
-  uzunluk?: number;
-  basınc_dayanimi?: number;
+  cap_mm?: number;
+  boy_mm?: number;
+  kirilma_yuku_kn?: number;
+  fb_mpa?: number;
+  fck_mpa?: number;
   test_tarihi?: string;
+  lab_tamamlandi?: number;
   notlar?: string;
   created_by?: number;
   created_at?: string;
@@ -127,21 +176,22 @@ export interface Karot {
 export interface Schmidt {
   id: number;
   project_id: number;
-  test_no?: string;
-  lokasyon?: string;
+  eleman_tipi?: string;
+  eleman_kodu?: string;
   kat?: string;
-  okuma_1?: number;
-  okuma_2?: number;
-  okuma_3?: number;
-  okuma_4?: number;
-  okuma_5?: number;
-  okuma_6?: number;
-  okuma_7?: number;
-  okuma_8?: number;
-  okuma_9?: number;
-  okuma_10?: number;
-  ortalama?: number;
-  tahmini_dayanim?: number;
+  karot_var_mi?: number;
+  r_ort?: number;
+  sapma_aralik?: number;
+  r1?: number;
+  r2?: number;
+  r3?: number;
+  r4?: number;
+  r5?: number;
+  r6?: number;
+  r7?: number;
+  r8?: number;
+  r9?: number;
+  r10?: number;
   test_tarihi?: string;
   notlar?: string;
   created_by?: number;

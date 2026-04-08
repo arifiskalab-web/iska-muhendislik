@@ -466,6 +466,127 @@ app.get('/api/users/field-teams', async (c) => {
   return c.json({ field_teams: results || [] })
 })
 
+// Get reporters (for coordinator assignment)
+app.get('/api/users/reporters', async (c) => {
+  const { DB } = c.env
+  
+  const { results } = await DB.prepare(`
+    SELECT id, username, full_name 
+    FROM users 
+    WHERE role = 'reporter' AND active = 1
+    ORDER BY full_name
+  `).all()
+
+  return c.json({ reporters: results || [] })
+})
+
+// ==================== RÖLÖVE API ====================
+
+// Get rölöve for project
+app.get('/api/roloove/:projectId', async (c) => {
+  const { DB } = c.env
+  const projectId = c.req.param('projectId')
+
+  const roloove = await DB.prepare('SELECT * FROM roloove WHERE project_id = ?')
+    .bind(projectId)
+    .first()
+
+  if (!roloove) {
+    return c.json({ roloove: null, kolon_tanimlari: [], perde_tanimlari: [], kat_yukseklikleri: [] })
+  }
+
+  const { results: kolonlar } = await DB.prepare('SELECT * FROM kolon_tanimlari WHERE roloove_id = ? ORDER BY kolon_kodu')
+    .bind(roloove.id).all()
+  
+  const { results: perdeler } = await DB.prepare('SELECT * FROM perde_tanimlari WHERE roloove_id = ? ORDER BY perde_kodu')
+    .bind(roloove.id).all()
+
+  const { results: katlar } = await DB.prepare('SELECT * FROM kat_yukseklikleri WHERE roloove_id = ? ORDER BY kat_no')
+    .bind(roloove.id).all()
+
+  return c.json({ 
+    roloove, 
+    kolon_tanimlari: kolonlar || [],
+    perde_tanimlari: perdeler || [],
+    kat_yukseklikleri: katlar || []
+  })
+})
+
+// Create rölöve
+app.post('/api/roloove/:projectId', async (c) => {
+  const { DB } = c.env
+  const projectId = c.req.param('projectId')
+  const authHeader = c.req.header('Authorization')
+  const token = authHeader?.substring(7) || ''
+  const userId = parseInt(atob(token).split(':')[0])
+
+  const data = await c.req.json()
+
+  // Create rölöve
+  const rolooveResult = await DB.prepare(`
+    INSERT INTO roloove (project_id, roloove_image, inceleme_kati, kat_sayisi, bodrum_kat_sayisi, kolon_sayisi, perde_sayisi, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    projectId,
+    data.roloove_image || null,
+    data.inceleme_kati,
+    data.kat_sayisi,
+    data.bodrum_kat_sayisi || 0,
+    data.kolon_sayisi,
+    data.perde_sayisi,
+    userId
+  ).run()
+
+  const rolooveId = rolooveResult.meta.last_row_id
+
+  // Create kat yükseklikleri
+  if (data.kat_yukseklikleri && data.kat_yukseklikleri.length > 0) {
+    for (const kat of data.kat_yukseklikleri) {
+      await DB.prepare(`
+        INSERT INTO kat_yukseklikleri (roloove_id, kat_no, kat_adi, yukseklik)
+        VALUES (?, ?, ?, ?)
+      `).bind(rolooveId, kat.kat_no, kat.kat_adi, kat.yukseklik || null).run()
+    }
+  }
+
+  // Create kolon tanımları
+  if (data.kolon_tanimlari && data.kolon_tanimlari.length > 0) {
+    for (const kolon of data.kolon_tanimlari) {
+      await DB.prepare(`
+        INSERT INTO kolon_tanimlari (roloove_id, kolon_kodu, genis_yuzey, dar_yuzey, yon_ters)
+        VALUES (?, ?, ?, ?, ?)
+      `).bind(rolooveId, kolon.kolon_kodu, kolon.genis_yuzey || null, kolon.dar_yuzey || null, kolon.yon_ters || 0).run()
+    }
+  }
+
+  // Create perde tanımları
+  if (data.perde_tanimlari && data.perde_tanimlari.length > 0) {
+    for (const perde of data.perde_tanimlari) {
+      await DB.prepare(`
+        INSERT INTO perde_tanimlari (roloove_id, perde_kodu, uzunluk, kalinlik)
+        VALUES (?, ?, ?, ?)
+      `).bind(rolooveId, perde.perde_kodu, perde.uzunluk || null, perde.kalinlik || null).run()
+    }
+  }
+
+  return c.json({ success: true, roloove_id: rolooveId })
+})
+
+// Update kolon boyutları
+app.put('/api/roloove/kolon/:kolonId', async (c) => {
+  const { DB } = c.env
+  const kolonId = c.req.param('kolonId')
+  const data = await c.req.json()
+
+  await DB.prepare(`
+    UPDATE kolon_tanimlari 
+    SET genis_yuzey = ?, dar_yuzey = ?, yon_ters = ?
+    WHERE id = ?
+  `).bind(data.genis_yuzey, data.dar_yuzey, data.yon_ters || 0, kolonId).run()
+
+  return c.json({ success: true })
+})
+
 // ==================== FRONTEND ROUTES ====================
 
 // Main page - Login or Dashboard
