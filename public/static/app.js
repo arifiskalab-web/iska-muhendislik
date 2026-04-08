@@ -220,8 +220,12 @@ async function loadDashboard() {
     showCoordinatorDashboard();
   } else if (currentUser.role === 'field_team') {
     showFieldTeamDashboard();
+  } else if (currentUser.role === 'lab') {
+    showLabDashboard();
   } else if (currentUser.role === 'reporter') {
     showReporterDashboard();
+  } else if (currentUser.role === 'accounting') {
+    showAccountingDashboard();
   } else {
     showGenericDashboard();
   }
@@ -332,6 +336,704 @@ function showFieldTeamDashboard() {
   `;
   
   showFieldTab('gorevler');
+}
+
+function showLabDashboard() {
+  currentView = 'lab';
+  
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="min-h-screen bg-gray-100">
+      <!-- Header -->
+      <div class="bg-purple-600 text-white p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+          <div class="flex items-center">
+            <i class="fas fa-flask text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-xl font-bold">Laboratuvar Paneli</h1>
+              <p class="text-sm text-purple-200">${currentUser.full_name}</p>
+            </div>
+          </div>
+          <button onclick="logout()" class="bg-purple-700 hover:bg-purple-800 px-4 py-2 rounded-lg transition">
+            <i class="fas fa-sign-out-alt mr-2"></i>Çıkış
+          </button>
+        </div>
+      </div>
+      
+      <!-- Navigation Tabs -->
+      <div class="bg-white border-b">
+        <div class="container mx-auto">
+          <div class="flex space-x-1">
+            <button onclick="showLabTab('karot')" id="lab-tab-karot" class="px-6 py-3 font-semibold border-b-2 border-purple-600 text-purple-600">
+              <i class="fas fa-vial mr-2"></i>Karot Sonuçları
+            </button>
+            <button onclick="showLabTab('schmidt')" id="lab-tab-schmidt" class="px-6 py-3 font-semibold text-gray-600 hover:text-purple-600">
+              <i class="fas fa-hammer mr-2"></i>Schmidt Sonuçları
+            </button>
+            <button onclick="showLabTab('isler')" id="lab-tab-isler" class="px-6 py-3 font-semibold text-gray-600 hover:text-purple-600">
+              <i class="fas fa-list mr-2"></i>Tüm İşler
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Content -->
+      <div class="container mx-auto p-6">
+        <div id="lab-tab-content"></div>
+      </div>
+    </div>
+  `;
+  
+  showLabTab('karot');
+}
+
+function showLabTab(tabName) {
+  // Update tab styling
+  document.querySelectorAll('[id^="lab-tab-"]').forEach(tab => {
+    tab.classList.remove('border-purple-600', 'text-purple-600', 'border-b-2');
+    tab.classList.add('text-gray-600');
+  });
+  document.getElementById(`lab-tab-${tabName}`).classList.add('border-purple-600', 'text-purple-600', 'border-b-2');
+  document.getElementById(`lab-tab-${tabName}`).classList.remove('text-gray-600');
+  
+  const content = document.getElementById('lab-tab-content');
+  
+  if (tabName === 'karot') {
+    showLabKarotTab(content);
+  } else if (tabName === 'schmidt') {
+    showLabSchmidtTab(content);
+  } else if (tabName === 'isler') {
+    showLabIslerTab(content);
+  }
+}
+
+async function showLabKarotTab(content) {
+  // Tüm karot verilerini getir
+  const allKarotData = [];
+  for (const project of projects) {
+    const karotData = await api.getFieldData('karot', project.id);
+    if (karotData.data && karotData.data.length > 0) {
+      allKarotData.push({
+        project: project,
+        data: karotData.data
+      });
+    }
+  }
+  
+  content.innerHTML = `
+    <div class="bg-white rounded-lg shadow-lg p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">
+          <i class="fas fa-vial text-purple-600 mr-2"></i>Karot Deney Sonuçları
+        </h2>
+        <div class="text-sm text-gray-600">
+          <i class="fas fa-info-circle mr-1"></i>Toplam ${allKarotData.length} iş
+        </div>
+      </div>
+      
+      ${allKarotData.length > 0 ? allKarotData.map(item => `
+        <div class="mb-6 border rounded-lg overflow-hidden">
+          <div class="bg-purple-50 border-b p-4">
+            <h3 class="font-bold text-lg">İş No: ${item.project.is_no}</h3>
+            <p class="text-sm text-gray-600">${item.project.adres}</p>
+            <p class="text-sm text-gray-600">Durum: <span class="${getDurumColor(item.project.durum)}">${item.project.durum}</span></p>
+          </div>
+          
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="px-3 py-2 text-left">Karot No</th>
+                  <th class="px-3 py-2 text-left">Eleman</th>
+                  <th class="px-3 py-2 text-left">Kat</th>
+                  <th class="px-3 py-2 text-left">Çap (mm)</th>
+                  <th class="px-3 py-2 text-left">Boy (mm)</th>
+                  <th class="px-3 py-2 text-left">Yük (kN)</th>
+                  <th class="px-3 py-2 text-left font-bold">fb (MPa)</th>
+                  <th class="px-3 py-2 text-left font-bold">fck (MPa)</th>
+                  <th class="px-3 py-2 text-left">Test Tarihi</th>
+                  <th class="px-3 py-2 text-left">Karot</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${item.data.map(d => `
+                  <tr class="border-t hover:bg-gray-50">
+                    <td class="px-3 py-2 font-semibold">${d.karot_no || d.numune_no || '-'}</td>
+                    <td class="px-3 py-2">${d.eleman_kodu || d.lokasyon || '-'}</td>
+                    <td class="px-3 py-2">${d.kat || '-'}</td>
+                    <td class="px-3 py-2">${d.cap_mm || d.cap || '-'}</td>
+                    <td class="px-3 py-2">${d.boy_mm || d.uzunluk || '-'}</td>
+                    <td class="px-3 py-2">${d.kirilma_yuku_kn || '-'}</td>
+                    <td class="px-3 py-2 font-bold text-orange-600">${d.fb_mpa || d.basınc_dayanimi || '-'}</td>
+                    <td class="px-3 py-2 font-bold text-red-600">${d.fck_mpa || '-'}</td>
+                    <td class="px-3 py-2">${d.test_tarihi || '-'}</td>
+                    <td class="px-3 py-2">
+                      <span class="${d.karot_var === 'var' ? 'text-green-600' : 'text-red-600'} font-semibold">
+                        ${d.karot_var || '-'}
+                      </span>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `).join('') : `
+        <div class="text-center py-12 text-gray-500">
+          <i class="fas fa-flask text-4xl mb-4"></i>
+          <p>Henüz karot verisi yok</p>
+        </div>
+      `}
+    </div>
+  `;
+}
+
+async function showLabSchmidtTab(content) {
+  // Tüm schmidt verilerini getir
+  const allSchmidtData = [];
+  for (const project of projects) {
+    const schmidtData = await api.getFieldData('schmidt', project.id);
+    if (schmidtData.data && schmidtData.data.length > 0) {
+      allSchmidtData.push({
+        project: project,
+        data: schmidtData.data
+      });
+    }
+  }
+  
+  content.innerHTML = `
+    <div class="bg-white rounded-lg shadow-lg p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">
+          <i class="fas fa-hammer text-purple-600 mr-2"></i>Schmidt Çekici Deney Sonuçları
+        </h2>
+        <div class="text-sm text-gray-600">
+          <i class="fas fa-info-circle mr-1"></i>Toplam ${allSchmidtData.length} iş
+        </div>
+      </div>
+      
+      ${allSchmidtData.length > 0 ? allSchmidtData.map(item => `
+        <div class="mb-6 border rounded-lg overflow-hidden">
+          <div class="bg-purple-50 border-b p-4">
+            <h3 class="font-bold text-lg">İş No: ${item.project.is_no}</h3>
+            <p class="text-sm text-gray-600">${item.project.adres}</p>
+            <p class="text-sm text-gray-600">Durum: <span class="${getDurumColor(item.project.durum)}">${item.project.durum}</span></p>
+          </div>
+          
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="px-3 py-2 text-left">Test No</th>
+                  <th class="px-3 py-2 text-left">Eleman</th>
+                  <th class="px-3 py-2 text-left">Lokasyon</th>
+                  <th class="px-3 py-2 text-left">Kat</th>
+                  <th class="px-3 py-2 text-left font-bold">Ortalama</th>
+                  <th class="px-3 py-2 text-left">Tahmini Dayanım</th>
+                  <th class="px-3 py-2 text-left">Test Tarihi</th>
+                  <th class="px-3 py-2 text-left">Notlar</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${item.data.map(d => `
+                  <tr class="border-t hover:bg-gray-50">
+                    <td class="px-3 py-2 font-semibold">${d.test_no || '-'}</td>
+                    <td class="px-3 py-2">${d.eleman_tipi || '-'}</td>
+                    <td class="px-3 py-2">${d.lokasyon || '-'}</td>
+                    <td class="px-3 py-2">${d.kat || '-'}</td>
+                    <td class="px-3 py-2 font-bold text-blue-600">${d.ortalama || '-'}</td>
+                    <td class="px-3 py-2">${d.tahmini_dayanim || '-'} MPa</td>
+                    <td class="px-3 py-2">${d.test_tarihi || '-'}</td>
+                    <td class="px-3 py-2">${d.notlar || '-'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `).join('') : `
+        <div class="text-center py-12 text-gray-500">
+          <i class="fas fa-hammer text-4xl mb-4"></i>
+          <p>Henüz Schmidt verisi yok</p>
+        </div>
+      `}
+    </div>
+  `;
+}
+
+async function showLabIslerTab(content) {
+  content.innerHTML = `
+    <div class="bg-white rounded-lg shadow-lg p-6">
+      <h2 class="text-2xl font-bold mb-6">
+        <i class="fas fa-list text-purple-600 mr-2"></i>Tüm İşler
+      </h2>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-4 py-2 text-left">İş No</th>
+              <th class="px-4 py-2 text-left">İş Veren</th>
+              <th class="px-4 py-2 text-left">Adres</th>
+              <th class="px-4 py-2 text-left">Durum</th>
+              <th class="px-4 py-2 text-left">Saha Tarihi</th>
+              <th class="px-4 py-2 text-left">Raportör</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${projects.map(p => `
+              <tr class="border-t hover:bg-gray-50">
+                <td class="px-4 py-2 font-semibold">${p.is_no || '-'}</td>
+                <td class="px-4 py-2">${p.is_veren || '-'}</td>
+                <td class="px-4 py-2">${p.adres || '-'}</td>
+                <td class="px-4 py-2">
+                  <span class="${getDurumColor(p.durum)}">${p.durum || '-'}</span>
+                </td>
+                <td class="px-4 py-2">${p.saha_tarihi || '-'}</td>
+                <td class="px-4 py-2">${p.raportoru_hazirlayan || '-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function showReporterDashboard() {
+  currentView = 'reporter';
+  
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="min-h-screen bg-gray-100">
+      <!-- Header -->
+      <div class="bg-indigo-600 text-white p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+          <div class="flex items-center">
+            <i class="fas fa-file-alt text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-xl font-bold">Raportör Paneli</h1>
+              <p class="text-sm text-indigo-200">${currentUser.full_name}</p>
+            </div>
+          </div>
+          <button onclick="logout()" class="bg-indigo-700 hover:bg-indigo-800 px-4 py-2 rounded-lg transition">
+            <i class="fas fa-sign-out-alt mr-2"></i>Çıkış
+          </button>
+        </div>
+      </div>
+      
+      <!-- Navigation Tabs -->
+      <div class="bg-white border-b">
+        <div class="container mx-auto">
+          <div class="flex space-x-1 overflow-x-auto">
+            <button onclick="showReporterTab('isler')" id="reporter-tab-isler" class="px-6 py-3 font-semibold border-b-2 border-indigo-600 text-indigo-600 whitespace-nowrap">
+              <i class="fas fa-list mr-2"></i>İşlerim
+            </button>
+            <button onclick="showReporterTab('tum-veriler')" id="reporter-tab-tum-veriler" class="px-6 py-3 font-semibold text-gray-600 hover:text-indigo-600 whitespace-nowrap">
+              <i class="fas fa-database mr-2"></i>Tüm Veriler
+            </button>
+            <button onclick="showReporterTab('fotograflar')" id="reporter-tab-fotograflar" class="px-6 py-3 font-semibold text-gray-600 hover:text-indigo-600 whitespace-nowrap">
+              <i class="fas fa-images mr-2"></i>Fotoğraflar
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Content -->
+      <div class="container mx-auto p-6">
+        <div id="reporter-tab-content"></div>
+      </div>
+    </div>
+  `;
+  
+  showReporterTab('isler');
+}
+
+function showReporterTab(tabName) {
+  // Update tab styling
+  document.querySelectorAll('[id^="reporter-tab-"]').forEach(tab => {
+    tab.classList.remove('border-indigo-600', 'text-indigo-600', 'border-b-2');
+    tab.classList.add('text-gray-600');
+  });
+  document.getElementById(`reporter-tab-${tabName}`).classList.add('border-indigo-600', 'text-indigo-600', 'border-b-2');
+  document.getElementById(`reporter-tab-${tabName}`).classList.remove('text-gray-600');
+  
+  const content = document.getElementById('reporter-tab-content');
+  
+  if (tabName === 'isler') {
+    showReporterIslerTab(content);
+  } else if (tabName === 'tum-veriler') {
+    showReporterTumVerilerTab(content);
+  } else if (tabName === 'fotograflar') {
+    showReporterFotograflarTab(content);
+  }
+}
+
+async function showReporterIslerTab(content) {
+  // Raportöre atanan işleri filtrele
+  const myProjects = projects.filter(p => 
+    p.raportoru_hazirlayan === currentUser.full_name || 
+    p.durum === 'Lab Bekliyor' || 
+    p.durum === 'Analizde'
+  );
+  
+  content.innerHTML = `
+    <div class="bg-white rounded-lg shadow-lg p-6">
+      <h2 class="text-2xl font-bold mb-6">
+        <i class="fas fa-list text-indigo-600 mr-2"></i>Bana Atanan İşler
+      </h2>
+      
+      ${myProjects.length > 0 ? `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          ${myProjects.map(p => `
+            <div class="border rounded-lg p-4 hover:shadow-lg transition cursor-pointer" onclick="selectProjectForReporter(${p.id})">
+              <div class="flex justify-between items-start mb-2">
+                <h3 class="font-bold text-lg">${p.is_no}</h3>
+                <span class="${getDurumColor(p.durum)} text-xs px-2 py-1 rounded">${p.durum}</span>
+              </div>
+              <p class="text-sm text-gray-600 mb-2">${p.is_veren}</p>
+              <p class="text-sm text-gray-500 mb-2">${p.adres}</p>
+              <div class="flex justify-between items-center text-xs text-gray-500 mt-3 pt-3 border-t">
+                <span><i class="fas fa-calendar mr-1"></i>${p.saha_tarihi || '-'}</span>
+                <button class="bg-indigo-600 text-white px-3 py-1 rounded text-xs hover:bg-indigo-700">
+                  <i class="fas fa-eye mr-1"></i>Detay
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : `
+        <div class="text-center py-12 text-gray-500">
+          <i class="fas fa-inbox text-4xl mb-4"></i>
+          <p>Henüz atanan iş yok</p>
+        </div>
+      `}
+    </div>
+  `;
+}
+
+async function showReporterTumVerilerTab(content) {
+  if (!selectedProject) {
+    content.innerHTML = `
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+        <i class="fas fa-info-circle text-yellow-600 text-3xl mb-3"></i>
+        <p class="text-yellow-800">Lütfen önce "İşlerim" sekmesinden bir iş seçin</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Tüm verileri getir
+  const roloove = await api.getRoloove(selectedProject.id);
+  const kolonSiyirma = await api.getFieldData('kolon-siyirma', selectedProject.id);
+  const kolonRontgen = await api.getFieldData('kolon-rontgen', selectedProject.id);
+  const schmidt = await api.getFieldData('schmidt', selectedProject.id);
+  const karot = await api.getFieldData('karot', selectedProject.id);
+  
+  content.innerHTML = `
+    <div class="space-y-6">
+      <!-- Proje Bilgileri -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-bold mb-4">
+          <i class="fas fa-building text-indigo-600 mr-2"></i>${selectedProject.is_no} - Tüm Veriler
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div class="bg-gray-50 p-3 rounded">
+            <p class="text-xs text-gray-600">İş Veren</p>
+            <p class="font-semibold">${selectedProject.is_veren}</p>
+          </div>
+          <div class="bg-gray-50 p-3 rounded">
+            <p class="text-xs text-gray-600">Adres</p>
+            <p class="font-semibold">${selectedProject.adres}</p>
+          </div>
+          <div class="bg-gray-50 p-3 rounded">
+            <p class="text-xs text-gray-600">Yönetmelik</p>
+            <p class="font-semibold">${selectedProject.yonetmelik || '-'}</p>
+          </div>
+          <div class="bg-gray-50 p-3 rounded">
+            <p class="text-xs text-gray-600">Durum</p>
+            <p class="${getDurumColor(selectedProject.durum)}">${selectedProject.durum}</p>
+          </div>
+        </div>
+        
+        <button onclick="downloadAllPhotos(${selectedProject.id})" 
+                class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:from-indigo-600 hover:to-purple-600 font-semibold">
+          <i class="fas fa-download mr-2"></i>Tüm Fotoğrafları İndir (ZIP)
+        </button>
+      </div>
+      
+      <!-- Rölöve -->
+      ${roloove.data ? `
+        <div class="bg-white rounded-lg shadow-lg p-6">
+          <h3 class="text-xl font-bold mb-4">
+            <i class="fas fa-drafting-compass text-indigo-600 mr-2"></i>Rölöve Bilgileri
+          </h3>
+          ${roloove.data.roloove_image ? `
+            <img src="${roloove.data.roloove_image}" class="w-full max-w-md rounded border mb-4" />
+          ` : ''}
+          <div class="grid grid-cols-4 gap-4">
+            <div class="bg-gray-50 p-3 rounded">
+              <p class="text-xs text-gray-600">İnceleme Katı</p>
+              <p class="font-semibold">${roloove.data.inceleme_kati}</p>
+            </div>
+            <div class="bg-gray-50 p-3 rounded">
+              <p class="text-xs text-gray-600">Kat Sayısı</p>
+              <p class="font-semibold">${roloove.data.kat_sayisi}</p>
+            </div>
+            <div class="bg-gray-50 p-3 rounded">
+              <p class="text-xs text-gray-600">Kolon Sayısı</p>
+              <p class="font-semibold">${roloove.data.kolon_sayisi}</p>
+            </div>
+            <div class="bg-gray-50 p-3 rounded">
+              <p class="text-xs text-gray-600">Perde Sayısı</p>
+              <p class="font-semibold">${roloove.data.perde_sayisi || 0}</p>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+      
+      <!-- Sıyırma Verileri -->
+      ${kolonSiyirma.data?.length > 0 ? `
+        <div class="bg-white rounded-lg shadow-lg p-6">
+          <h3 class="text-xl font-bold mb-4">
+            <i class="fas fa-ruler text-indigo-600 mr-2"></i>Kolon Sıyırma Verileri (${kolonSiyirma.data.length})
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="px-3 py-2 text-left">Kolon</th>
+                  <th class="px-3 py-2 text-left">Boyutlar</th>
+                  <th class="px-3 py-2 text-left">Donatı</th>
+                  <th class="px-3 py-2 text-left">Etriye</th>
+                  <th class="px-3 py-2 text-left">Fotoğraflar</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${kolonSiyirma.data.map(d => `
+                  <tr class="border-t">
+                    <td class="px-3 py-2 font-bold">${d.kolon_kodu}</td>
+                    <td class="px-3 py-2">${d.genis_yuzey}x${d.dar_yuzey} cm</td>
+                    <td class="px-3 py-2">Ø${d.donati_capi}</td>
+                    <td class="px-3 py-2">Ø${d.etriye_capi} / ${d.etriye_araligi}cm</td>
+                    <td class="px-3 py-2">
+                      <button onclick="viewKolonPhotos('${d.kolon_kodu}')" 
+                              class="text-indigo-600 hover:text-indigo-800 text-sm">
+                        <i class="fas fa-images mr-1"></i>Görüntüle
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ` : ''}
+      
+      <!-- Röntgen Verileri -->
+      ${kolonRontgen.data?.length > 0 ? `
+        <div class="bg-white rounded-lg shadow-lg p-6">
+          <h3 class="text-xl font-bold mb-4">
+            <i class="fas fa-x-ray text-indigo-600 mr-2"></i>Röntgen Verileri (${kolonRontgen.data.length})
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="px-3 py-2 text-left">Kolon</th>
+                  <th class="px-3 py-2 text-left">Kat</th>
+                  <th class="px-3 py-2 text-left">Donatı Sayısı</th>
+                  <th class="px-3 py-2 text-left">Donatı Çapı</th>
+                  <th class="px-3 py-2 text-left">Fotoğraflar</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${kolonRontgen.data.map(d => `
+                  <tr class="border-t">
+                    <td class="px-3 py-2 font-bold">${d.kolon_kodu}</td>
+                    <td class="px-3 py-2">${d.kat || '-'}</td>
+                    <td class="px-3 py-2">${d.donati_sayisi}</td>
+                    <td class="px-3 py-2">Ø${d.donati_capi}</td>
+                    <td class="px-3 py-2">
+                      <button onclick="viewKolonRontgenPhotos('${d.kolon_kodu}')" 
+                              class="text-indigo-600 hover:text-indigo-800 text-sm">
+                        <i class="fas fa-images mr-1"></i>Görüntüle
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ` : ''}
+      
+      <!-- Schmidt & Karot -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        ${schmidt.data?.length > 0 ? `
+          <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-xl font-bold mb-4">
+              <i class="fas fa-hammer text-indigo-600 mr-2"></i>Schmidt (${schmidt.data.length})
+            </h3>
+            <div class="space-y-2">
+              ${schmidt.data.slice(0, 5).map(d => `
+                <div class="bg-gray-50 p-3 rounded flex justify-between">
+                  <span>${d.test_no} - ${d.eleman_tipi || d.lokasyon}</span>
+                  <span class="font-bold text-blue-600">Ort: ${d.ortalama}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+        
+        ${karot.data?.length > 0 ? `
+          <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-xl font-bold mb-4">
+              <i class="fas fa-vial text-indigo-600 mr-2"></i>Karot (${karot.data.length})
+            </h3>
+            <div class="space-y-2">
+              ${karot.data.slice(0, 5).map(d => `
+                <div class="bg-gray-50 p-3 rounded">
+                  <div class="flex justify-between">
+                    <span>${d.karot_no || d.numune_no}</span>
+                    <span class="text-xs text-gray-600">${d.eleman_kodu || '-'}</span>
+                  </div>
+                  <div class="flex gap-4 mt-1 text-sm">
+                    <span class="text-orange-600 font-bold">fb: ${d.fb_mpa || '-'}</span>
+                    <span class="text-red-600 font-bold">fck: ${d.fck_mpa || '-'}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+async function showReporterFotograflarTab(content) {
+  if (!selectedProject) {
+    content.innerHTML = `
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+        <i class="fas fa-info-circle text-yellow-600 text-3xl mb-3"></i>
+        <p class="text-yellow-800">Lütfen önce "İşlerim" sekmesinden bir iş seçin</p>
+      </div>
+    `;
+    return;
+  }
+  
+  const { photos } = await api.getProjectPhotos(selectedProject.id);
+  
+  content.innerHTML = `
+    <div class="bg-white rounded-lg shadow-lg p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">
+          <i class="fas fa-images text-indigo-600 mr-2"></i>${selectedProject.is_no} - Fotoğraflar
+        </h2>
+        <button onclick="downloadAllPhotos(${selectedProject.id})" 
+                class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:from-indigo-600 hover:to-purple-600">
+          <i class="fas fa-download mr-2"></i>Tümünü İndir
+        </button>
+      </div>
+      
+      ${photos.length > 0 ? `
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          ${photos.map(p => `
+            <div class="border rounded-lg overflow-hidden hover:shadow-lg transition">
+              <img src="${p.foto_data}" class="w-full h-48 object-cover" />
+              <div class="p-3">
+                <p class="text-sm font-semibold truncate">${p.foto_adi}</p>
+                <p class="text-xs text-gray-600">${p.eleman_kodu}</p>
+                <p class="text-xs text-gray-500">${(p.dosya_boyutu / 1024).toFixed(0)} KB</p>
+                <button onclick="downloadPhoto('${p.foto_data}', '${p.foto_adi}')" 
+                        class="w-full mt-2 bg-indigo-600 text-white py-1 rounded text-xs hover:bg-indigo-700">
+                  <i class="fas fa-download mr-1"></i>İndir
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : `
+        <div class="text-center py-12 text-gray-500">
+          <i class="fas fa-images text-4xl mb-4"></i>
+          <p>Henüz fotoğraf yok</p>
+        </div>
+      `}
+    </div>
+  `;
+}
+
+function showAccountingDashboard() {
+  currentView = 'accounting';
+  
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="min-h-screen bg-gray-100">
+      <!-- Header -->
+      <div class="bg-teal-600 text-white p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+          <div class="flex items-center">
+            <i class="fas fa-calculator text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-xl font-bold">Muhasebe Paneli</h1>
+              <p class="text-sm text-teal-200">${currentUser.full_name}</p>
+            </div>
+          </div>
+          <button onclick="logout()" class="bg-teal-700 hover:bg-teal-800 px-4 py-2 rounded-lg transition">
+            <i class="fas fa-sign-out-alt mr-2"></i>Çıkış
+          </button>
+        </div>
+      </div>
+      
+      <!-- Content -->
+      <div class="container mx-auto p-6">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+          <h2 class="text-2xl font-bold mb-6">
+            <i class="fas fa-file-invoice-dollar text-teal-600 mr-2"></i>Mali İşlemler
+          </h2>
+          
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="px-4 py-2 text-left">İş No</th>
+                  <th class="px-4 py-2 text-left">İş Veren</th>
+                  <th class="px-4 py-2 text-left">Adres</th>
+                  <th class="px-4 py-2 text-left">Durum</th>
+                  <th class="px-4 py-2 text-left">Fiyat</th>
+                  <th class="px-4 py-2 text-left">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${projects.map(p => `
+                  <tr class="border-t hover:bg-gray-50">
+                    <td class="px-4 py-2 font-semibold">${p.is_no || '-'}</td>
+                    <td class="px-4 py-2">${p.is_veren || '-'}</td>
+                    <td class="px-4 py-2">${p.adres || '-'}</td>
+                    <td class="px-4 py-2">
+                      <span class="${getDurumColor(p.durum)}">${p.durum || '-'}</span>
+                    </td>
+                    <td class="px-4 py-2 font-bold text-green-600">${p.fiyat || '-'} ₺</td>
+                    <td class="px-4 py-2">
+                      <button class="bg-teal-600 text-white px-3 py-1 rounded text-xs hover:bg-teal-700">
+                        <i class="fas fa-edit mr-1"></i>Düzenle
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+window.selectProjectForReporter = function(projectId) {
+  selectedProject = projects.find(p => p.id === projectId);
+  showReporterTab('tum-veriler');
 }
 
 function showGenericDashboard() {
