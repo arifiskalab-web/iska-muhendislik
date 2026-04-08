@@ -1073,6 +1073,88 @@ window.viewKolonPhotos = async function(kolonKodu) {
   } catch (error) {
     alert('Fotoğraflar yüklenirken hata oluştu.');
   }
+}
+
+// Kolon Röntgen fotoğraf görüntüleme
+window.viewKolonRontgenPhotos = async function(kolonKodu) {
+  try {
+    const { photos } = await api.getPhotos(selectedProject.id, kolonKodu);
+    const rontgenPhotos = photos.filter(p => p.foto_tipi && p.foto_tipi.includes('rontgen'));
+    
+    if (rontgenPhotos.length === 0) {
+      alert('Bu kolon için röntgen fotoğrafı bulunamadı.');
+      return;
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
+        <div class="p-4 border-b flex justify-between items-center sticky top-0 bg-white">
+          <h3 class="text-lg font-bold">${kolonKodu} - Röntgen Fotoğrafları</h3>
+          <button onclick="this.closest('.fixed').remove()" class="text-gray-600 hover:text-gray-900">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          ${rontgenPhotos.map(p => `
+            <div class="border rounded p-2">
+              <p class="font-semibold text-sm mb-2">${p.foto_adi}</p>
+              <img src="${p.foto_data}" class="w-full rounded mb-2" />
+              <button onclick="downloadPhoto('${p.foto_data}', '${p.foto_adi}')" 
+                      class="w-full bg-purple-600 text-white py-1 rounded text-sm">
+                <i class="fas fa-download mr-1"></i>İndir
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  } catch (error) {
+    alert('Fotoğraflar yüklenirken hata oluştu.');
+  }
+}
+
+// Perde Röntgen fotoğraf görüntüleme
+window.viewPerdeRontgenPhotos = async function(perdeKodu) {
+  try {
+    const { photos } = await api.getPhotos(selectedProject.id, perdeKodu);
+    const rontgenPhotos = photos.filter(p => p.foto_tipi && p.foto_tipi.includes('rontgen'));
+    
+    if (rontgenPhotos.length === 0) {
+      alert('Bu perde için röntgen fotoğrafı bulunamadı.');
+      return;
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
+        <div class="p-4 border-b flex justify-between items-center sticky top-0 bg-white">
+          <h3 class="text-lg font-bold">${perdeKodu} - Röntgen Fotoğrafları</h3>
+          <button onclick="this.closest('.fixed').remove()" class="text-gray-600 hover:text-gray-900">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          ${rontgenPhotos.map(p => `
+            <div class="border rounded p-2">
+              <p class="font-semibold text-sm mb-2">${p.foto_adi}</p>
+              <img src="${p.foto_data}" class="w-full rounded mb-2" />
+              <button onclick="downloadPhoto('${p.foto_data}', '${p.foto_adi}')" 
+                      class="w-full bg-purple-600 text-white py-1 rounded text-sm">
+                <i class="fas fa-download mr-1"></i>İndir
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  } catch (error) {
+    alert('Fotoğraflar yüklenirken hata oluştu.');
+  }
           <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
             <i class="fas fa-plus mr-2"></i>Ekle
           </button>
@@ -1177,9 +1259,6 @@ window.viewKolonPhotos = async function(kolonKodu) {
 }
 
 async function showRontgenForm(content) {
-  const kolonData = await api.getFieldData('kolon-rontgen', selectedProject.id);
-  const perdeData = await api.getFieldData('perde-rontgen', selectedProject.id);
-  
   content.innerHTML = `
     <div class="space-y-6">
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -1187,95 +1266,292 @@ async function showRontgenForm(content) {
         <p class="text-sm text-gray-600">${selectedProject.adres}</p>
       </div>
       
-      <!-- Kolon Röntgen -->
-      <div class="bg-white rounded-lg shadow-lg p-6">
-        <h3 class="text-xl font-bold mb-4">
-          <i class="fas fa-x-ray mr-2"></i>Kolon Röntgen
-        </h3>
-        
-        <form id="kolonRontgenForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <input type="text" name="kolon_no" placeholder="Kolon No" class="px-3 py-2 border rounded" required />
-          <input type="text" name="kat" placeholder="Kat" class="px-3 py-2 border rounded" />
-          <input type="number" name="donatı_sayisi" placeholder="Donatı Sayısı" class="px-3 py-2 border rounded" />
-          <input type="text" name="donatı_çapı" placeholder="Donatı Çapı" class="px-3 py-2 border rounded" />
-          <input type="text" name="sargı_araligi" placeholder="Sargı Aralığı" class="px-3 py-2 border rounded" />
-          <input type="text" name="notlar" placeholder="Notlar" class="px-3 py-2 border rounded" />
-          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-            <i class="fas fa-plus mr-2"></i>Ekle
+      <!-- Röntgen Alt Sekmeleri -->
+      <div class="border-b border-gray-300 mb-4">
+        <div class="flex space-x-4">
+          <button onclick="showRontgenSubTab('kolon')" 
+                  class="rontgen-subtab px-6 py-3 font-semibold transition-colors border-b-4 border-transparent hover:border-purple-500"
+                  data-tab="kolon">
+            <i class="fas fa-columns mr-2"></i>Kolon Röntgen
           </button>
-        </form>
-        
-        <div class="overflow-x-auto">
-          <table class="min-w-full text-sm">
-            <thead class="bg-gray-100">
-              <tr>
-                <th class="px-3 py-2 text-left">Kolon No</th>
-                <th class="px-3 py-2 text-left">Kat</th>
-                <th class="px-3 py-2 text-left">Donatı Sayısı</th>
-                <th class="px-3 py-2 text-left">Donatı Çapı</th>
-                <th class="px-3 py-2 text-left">Sargı Aralığı</th>
-                <th class="px-3 py-2 text-left">Notlar</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${kolonData.data?.map(d => `
-                <tr class="border-t">
-                  <td class="px-3 py-2">${d.kolon_no || '-'}</td>
-                  <td class="px-3 py-2">${d.kat || '-'}</td>
-                  <td class="px-3 py-2">${d.donatı_sayisi || '-'}</td>
-                  <td class="px-3 py-2">${d.donatı_çapı || '-'}</td>
-                  <td class="px-3 py-2">${d.sargı_araligi || '-'}</td>
-                  <td class="px-3 py-2">${d.notlar || '-'}</td>
-                </tr>
-              `).join('') || '<tr><td colspan="6" class="text-center py-4 text-gray-500">Henüz veri yok</td></tr>'}
-            </tbody>
-          </table>
+          <button onclick="showRontgenSubTab('perde')" 
+                  class="rontgen-subtab px-6 py-3 font-semibold transition-colors border-b-4 border-transparent hover:border-purple-500"
+                  data-tab="perde">
+            <i class="fas fa-th-large mr-2"></i>Perde Röntgen
+          </button>
         </div>
       </div>
       
-      <!-- Perde Röntgen -->
-      <div class="bg-white rounded-lg shadow-lg p-6">
-        <h3 class="text-xl font-bold mb-4">
-          <i class="fas fa-x-ray mr-2"></i>Perde Röntgen
-        </h3>
+      <div id="rontgenSubContent"></div>
+    </div>
+  `;
+  
+  showRontgenSubTab('kolon');
+}
+
+async function showRontgenSubTab(subtab) {
+  // Tab styling
+  document.querySelectorAll('.rontgen-subtab').forEach(btn => {
+    if (btn.dataset.tab === subtab) {
+      btn.classList.add('border-purple-500', 'text-purple-600');
+      btn.classList.remove('text-gray-600');
+    } else {
+      btn.classList.remove('border-purple-500', 'text-purple-600');
+      btn.classList.add('text-gray-600');
+    }
+  });
+  
+  const content = document.getElementById('rontgenSubContent');
+  
+  if (subtab === 'kolon') {
+    await showKolonRontgenForm(content);
+  } else {
+    await showPerdeRontgenForm(content);
+  }
+}
+
+async function showKolonRontgenForm(content) {
+  const roloove = await api.getRoloove(selectedProject.id);
+  const kolonlar = roloove.data?.kolonlar || [];
+  const kolonData = await api.getFieldData('kolon-rontgen', selectedProject.id);
+  
+  content.innerHTML = `
+    <div class="bg-white rounded-lg shadow-lg p-6">
+      <h3 class="text-xl font-bold mb-4">
+        <i class="fas fa-x-ray mr-2"></i>Kolon Röntgen
+      </h3>
+      
+      <form id="kolonRontgenForm" class="space-y-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Kolon Kodu *</label>
+            <select name="kolon_kodu" class="w-full px-3 py-2 border rounded" required>
+              <option value="">Kolon seçin</option>
+              ${kolonlar.map(k => `<option value="${k.kolon_kodu}">${k.kolon_kodu}</option>`).join('')}
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Kat</label>
+            <input type="text" name="kat" class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Donatı Sayısı</label>
+            <input type="number" name="donati_sayisi" class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Donatı Çapı</label>
+            <input type="text" name="donati_capi" class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Sargı Aralığı</label>
+            <input type="text" name="sargi_araligi" class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Notlar</label>
+            <input type="text" name="notlar" class="w-full px-3 py-2 border rounded" />
+          </div>
+        </div>
         
-        <form id="perdeRontgenForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <input type="text" name="perde_no" placeholder="Perde No" class="px-3 py-2 border rounded" required />
-          <input type="text" name="kat" placeholder="Kat" class="px-3 py-2 border rounded" />
-          <input type="number" name="donatı_sayisi" placeholder="Donatı Sayısı" class="px-3 py-2 border rounded" />
-          <input type="text" name="donatı_çapı" placeholder="Donatı Çapı" class="px-3 py-2 border rounded" />
-          <input type="text" name="sargı_araligi" placeholder="Sargı Aralığı" class="px-3 py-2 border rounded" />
-          <input type="text" name="notlar" placeholder="Notlar" class="px-3 py-2 border rounded" />
-          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-            <i class="fas fa-plus mr-2"></i>Ekle
-          </button>
-        </form>
+        <!-- Fotoğraflar Bölümü -->
+        <div class="border-t pt-4 mt-4">
+          <h4 class="font-semibold mb-3">Röntgen Fotoğrafları</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${['Röntgen Görüntüsü 1', 'Röntgen Görüntüsü 2'].map((label, idx) => `
+              <div class="border rounded p-3">
+                <label class="block text-sm font-medium mb-2">${label}</label>
+                <div class="flex gap-2 mb-2">
+                  <button type="button" onclick="capturePhoto('kolon_rontgen_${idx+1}')" 
+                          class="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600">
+                    <i class="fas fa-camera mr-1"></i>Kamera
+                  </button>
+                  <button type="button" onclick="selectPhotoFromGallery('kolon_rontgen_${idx+1}')" 
+                          class="flex-1 bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600">
+                    <i class="fas fa-image mr-1"></i>Galeri
+                  </button>
+                </div>
+                <input type="hidden" name="foto_rontgen_${idx+1}" id="foto_rontgen_kolon_${idx+1}" />
+                <div id="preview_kolon_rontgen_${idx+1}" class="text-xs text-gray-500"></div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
         
-        <div class="overflow-x-auto">
-          <table class="min-w-full text-sm">
-            <thead class="bg-gray-100">
-              <tr>
-                <th class="px-3 py-2 text-left">Perde No</th>
-                <th class="px-3 py-2 text-left">Kat</th>
-                <th class="px-3 py-2 text-left">Donatı Sayısı</th>
-                <th class="px-3 py-2 text-left">Donatı Çapı</th>
-                <th class="px-3 py-2 text-left">Sargı Aralığı</th>
-                <th class="px-3 py-2 text-left">Notlar</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${perdeData.data?.map(d => `
-                <tr class="border-t">
-                  <td class="px-3 py-2">${d.perde_no || '-'}</td>
-                  <td class="px-3 py-2">${d.kat || '-'}</td>
-                  <td class="px-3 py-2">${d.donatı_sayisi || '-'}</td>
-                  <td class="px-3 py-2">${d.donatı_çapı || '-'}</td>
-                  <td class="px-3 py-2">${d.sargı_araligi || '-'}</td>
-                  <td class="px-3 py-2">${d.notlar || '-'}</td>
-                </tr>
-              `).join('') || '<tr><td colspan="6" class="text-center py-4 text-gray-500">Henüz veri yok</td></tr>'}
-            </tbody>
-          </table>
+        <button type="submit" class="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold">
+          <i class="fas fa-save mr-2"></i>Kaydet
+        </button>
+      </form>
+      
+      <!-- Kayıtlı Kolonlar -->
+      <div class="border-t pt-4">
+        <h4 class="font-semibold mb-3">Kayıtlı Kolon Röntgenleri</h4>
+        <div class="space-y-2">
+          ${kolonData.data?.length > 0 ? 
+            kolonData.data.map(d => `
+              <div class="border rounded p-3 bg-gray-50">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <span class="font-bold text-purple-600">${d.kolon_kodu || d.kolon_no || '-'}</span>
+                    ${d.kat ? `<span class="text-sm text-gray-600 ml-2">Kat: ${d.kat}</span>` : ''}
+                  </div>
+                  <button onclick="viewKolonRontgenPhotos('${d.kolon_kodu || d.kolon_no}')" 
+                          class="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">
+                    <i class="fas fa-images mr-1"></i>Fotoğraflar
+                  </button>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-sm">
+                  <div><span class="text-gray-600">Donatı Sayısı:</span> ${d.donati_sayisi || d.donatı_sayisi || '-'}</div>
+                  <div><span class="text-gray-600">Donatı Çapı:</span> ${d.donati_capi || d.donatı_çapı || '-'}</div>
+                  <div><span class="text-gray-600">Sargı Aralığı:</span> ${d.sargi_araligi || d.sargı_araligi || '-'}</div>
+                  <div><span class="text-gray-600">Notlar:</span> ${d.notlar || '-'}</div>
+                </div>
+              </div>
+            `).join('') 
+            : '<p class="text-center text-gray-500 py-4">Henüz röntgen verisi eklenmemiş</p>'
+          }
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('kolonRontgenForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Fotoğrafları ekle
+    data.foto_rontgen_1 = document.getElementById('foto_rontgen_kolon_1')?.value || '';
+    data.foto_rontgen_2 = document.getElementById('foto_rontgen_kolon_2')?.value || '';
+    
+    await api.createFieldData('kolon-rontgen', selectedProject.id, data);
+    showFieldTab('rontgen');
+  });
+}
+
+async function showPerdeRontgenForm(content) {
+  const roloove = await api.getRoloove(selectedProject.id);
+  const perdeler = roloove.data?.perdeler || [];
+  const perdeData = await api.getFieldData('perde-rontgen', selectedProject.id);
+  
+  content.innerHTML = `
+    <div class="bg-white rounded-lg shadow-lg p-6">
+      <h3 class="text-xl font-bold mb-4">
+        <i class="fas fa-x-ray mr-2"></i>Perde Röntgen
+      </h3>
+      
+      <form id="perdeRontgenForm" class="space-y-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Perde Kodu *</label>
+            <select name="perde_kodu" class="w-full px-3 py-2 border rounded" required>
+              <option value="">Perde seçin</option>
+              ${perdeler.map(p => `<option value="${p.perde_kodu}">${p.perde_kodu}</option>`).join('')}
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Kat</label>
+            <input type="text" name="kat" class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Donatı Sayısı</label>
+            <input type="number" name="donati_sayisi" class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Donatı Çapı</label>
+            <input type="text" name="donati_capi" class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Sargı Aralığı</label>
+            <input type="text" name="sargi_araligi" class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Notlar</label>
+            <input type="text" name="notlar" class="w-full px-3 py-2 border rounded" />
+          </div>
+        </div>
+        
+        <!-- Fotoğraflar Bölümü -->
+        <div class="border-t pt-4 mt-4">
+          <h4 class="font-semibold mb-3">Röntgen Fotoğrafları</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${['Röntgen Görüntüsü 1', 'Röntgen Görüntüsü 2'].map((label, idx) => `
+              <div class="border rounded p-3">
+                <label class="block text-sm font-medium mb-2">${label}</label>
+                <div class="flex gap-2 mb-2">
+                  <button type="button" onclick="capturePhoto('perde_rontgen_${idx+1}')" 
+                          class="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600">
+                    <i class="fas fa-camera mr-1"></i>Kamera
+                  </button>
+                  <button type="button" onclick="selectPhotoFromGallery('perde_rontgen_${idx+1}')" 
+                          class="flex-1 bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600">
+                    <i class="fas fa-image mr-1"></i>Galeri
+                  </button>
+                </div>
+                <input type="hidden" name="foto_rontgen_${idx+1}" id="foto_rontgen_perde_${idx+1}" />
+                <div id="preview_perde_rontgen_${idx+1}" class="text-xs text-gray-500"></div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        
+        <button type="submit" class="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold">
+          <i class="fas fa-save mr-2"></i>Kaydet
+        </button>
+      </form>
+      
+      <!-- Kayıtlı Perdeler -->
+      <div class="border-t pt-4">
+        <h4 class="font-semibold mb-3">Kayıtlı Perde Röntgenleri</h4>
+        <div class="space-y-2">
+          ${perdeData.data?.length > 0 ? 
+            perdeData.data.map(d => `
+              <div class="border rounded p-3 bg-gray-50">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <span class="font-bold text-purple-600">${d.perde_kodu || d.perde_no || '-'}</span>
+                    ${d.kat ? `<span class="text-sm text-gray-600 ml-2">Kat: ${d.kat}</span>` : ''}
+                  </div>
+                  <button onclick="viewPerdeRontgenPhotos('${d.perde_kodu || d.perde_no}')" 
+                          class="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">
+                    <i class="fas fa-images mr-1"></i>Fotoğraflar
+                  </button>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-sm">
+                  <div><span class="text-gray-600">Donatı Sayısı:</span> ${d.donati_sayisi || d.donatı_sayisi || '-'}</div>
+                  <div><span class="text-gray-600">Donatı Çapı:</span> ${d.donati_capi || d.donatı_çapı || '-'}</div>
+                  <div><span class="text-gray-600">Sargı Aralığı:</span> ${d.sargi_araligi || d.sargı_araligi || '-'}</div>
+                  <div><span class="text-gray-600">Notlar:</span> ${d.notlar || '-'}</div>
+                </div>
+              </div>
+            `).join('') 
+            : '<p class="text-center text-gray-500 py-4">Henüz röntgen verisi eklenmemiş</p>'
+          }
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('perdeRontgenForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Fotoğrafları ekle
+    data.foto_rontgen_1 = document.getElementById('foto_rontgen_perde_1')?.value || '';
+    data.foto_rontgen_2 = document.getElementById('foto_rontgen_perde_2')?.value || '';
+    
+    await api.createFieldData('perde-rontgen', selectedProject.id, data);
+    showFieldTab('rontgen');
+  });
         </div>
       </div>
     </div>
@@ -1318,49 +1594,135 @@ async function showKarotForm(content) {
           <i class="fas fa-vial mr-2"></i>Karot Deneyi
         </h3>
         
-        <form id="karotForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <input type="text" name="numune_no" placeholder="Numune No" class="px-3 py-2 border rounded" required />
-          <input type="text" name="lokasyon" placeholder="Lokasyon" class="px-3 py-2 border rounded" />
-          <input type="text" name="kat" placeholder="Kat" class="px-3 py-2 border rounded" />
-          <input type="number" step="0.01" name="cap" placeholder="Çap (cm)" class="px-3 py-2 border rounded" />
-          <input type="number" step="0.01" name="uzunluk" placeholder="Uzunluk (cm)" class="px-3 py-2 border rounded" />
-          <input type="number" step="0.01" name="basınc_dayanimi" placeholder="Basınç Dayanımı (MPa)" class="px-3 py-2 border rounded" />
-          <input type="date" name="test_tarihi" placeholder="Test Tarihi" class="px-3 py-2 border rounded" />
-          <input type="text" name="notlar" placeholder="Notlar" class="px-3 py-2 border rounded md:col-span-2" />
-          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-            <i class="fas fa-plus mr-2"></i>Ekle
+        <form id="karotForm" class="space-y-4 mb-6">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Karot No *</label>
+              <input type="text" name="karot_no" placeholder="Ör: KRT-01" class="w-full px-3 py-2 border rounded" required />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Eleman Kodu</label>
+              <input type="text" name="eleman_kodu" placeholder="Ör: SZ01" class="w-full px-3 py-2 border rounded" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Kat</label>
+              <input type="text" name="kat" placeholder="Ör: Zemin" class="w-full px-3 py-2 border rounded" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Lokasyon</label>
+              <input type="text" name="lokasyon" placeholder="Ör: Salon" class="w-full px-3 py-2 border rounded" />
+            </div>
+          </div>
+          
+          <!-- Otomatik Hesaplama Bölümü -->
+          <div class="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-300 rounded-lg p-4">
+            <h4 class="font-semibold mb-3 text-orange-900">
+              <i class="fas fa-calculator mr-2"></i>Otomatik fb & fck Hesaplama
+            </h4>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-medium mb-1">Çap (mm) *</label>
+                <input type="number" step="0.01" name="cap_mm" id="karotCap" 
+                       placeholder="Ör: 94" class="w-full px-3 py-2 border rounded" 
+                       onchange="calculateKarot()" required />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Boy (mm)</label>
+                <input type="number" step="0.01" name="boy_mm" 
+                       placeholder="Ör: 150" class="w-full px-3 py-2 border rounded" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Kırılma Yükü (kN) *</label>
+                <input type="number" step="0.01" name="kirilma_yuku_kn" id="karotYuk" 
+                       placeholder="Ör: 185.5" class="w-full px-3 py-2 border rounded" 
+                       onchange="calculateKarot()" required />
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div class="bg-white rounded-lg p-3 border-2 border-orange-400">
+                <label class="block text-sm font-medium mb-1 text-orange-700">fb (MPa) - Otomatik</label>
+                <input type="number" step="0.01" name="fb_mpa" id="karotFb" readonly
+                       class="w-full px-3 py-2 border rounded bg-gray-100 font-bold text-lg text-orange-600" 
+                       placeholder="Otomatik hesaplanacak" />
+              </div>
+              <div class="bg-white rounded-lg p-3 border-2 border-red-400">
+                <label class="block text-sm font-medium mb-1 text-red-700">fck (MPa) - Otomatik</label>
+                <input type="number" step="0.01" name="fck_mpa" id="karotFck" readonly
+                       class="w-full px-3 py-2 border rounded bg-gray-100 font-bold text-lg text-red-600" 
+                       placeholder="Otomatik hesaplanacak" />
+              </div>
+            </div>
+            
+            <div class="mt-3 text-xs text-gray-700 bg-white rounded p-2">
+              <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+              <strong>Formüller:</strong> 
+              fb = (Kırılma Yükü × 1000) / (π × (Çap/2)²) | 
+              fck ≈ 0.85 × fb
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Test Tarihi</label>
+              <input type="date" name="test_tarihi" class="w-full px-3 py-2 border rounded" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Karot Var mı?</label>
+              <select name="karot_var" class="w-full px-3 py-2 border rounded">
+                <option value="var">Var</option>
+                <option value="yok">Yok</option>
+              </select>
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Notlar</label>
+            <textarea name="notlar" rows="2" placeholder="Ek notlar..." 
+                      class="w-full px-3 py-2 border rounded"></textarea>
+          </div>
+          
+          <button type="submit" class="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-lg hover:from-orange-600 hover:to-red-600 font-semibold">
+            <i class="fas fa-save mr-2"></i>Kaydet
           </button>
         </form>
         
-        <div class="overflow-x-auto">
-          <table class="min-w-full text-sm">
-            <thead class="bg-gray-100">
-              <tr>
-                <th class="px-3 py-2 text-left">Numune No</th>
-                <th class="px-3 py-2 text-left">Lokasyon</th>
-                <th class="px-3 py-2 text-left">Kat</th>
-                <th class="px-3 py-2 text-left">Çap (cm)</th>
-                <th class="px-3 py-2 text-left">Uzunluk (cm)</th>
-                <th class="px-3 py-2 text-left">Basınç Dayanımı (MPa)</th>
-                <th class="px-3 py-2 text-left">Test Tarihi</th>
-                <th class="px-3 py-2 text-left">Notlar</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${karotData.data?.map(d => `
-                <tr class="border-t">
-                  <td class="px-3 py-2">${d.numune_no || '-'}</td>
-                  <td class="px-3 py-2">${d.lokasyon || '-'}</td>
-                  <td class="px-3 py-2">${d.kat || '-'}</td>
-                  <td class="px-3 py-2">${d.cap || '-'}</td>
-                  <td class="px-3 py-2">${d.uzunluk || '-'}</td>
-                  <td class="px-3 py-2">${d.basınc_dayanimi || '-'}</td>
-                  <td class="px-3 py-2">${d.test_tarihi || '-'}</td>
-                  <td class="px-3 py-2">${d.notlar || '-'}</td>
+        <!-- Karot Listesi -->
+        <div class="border-t pt-4">
+          <h4 class="font-semibold mb-3">Kayıtlı Karotlar</h4>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="px-3 py-2 text-left">Karot No</th>
+                  <th class="px-3 py-2 text-left">Eleman</th>
+                  <th class="px-3 py-2 text-left">Kat</th>
+                  <th class="px-3 py-2 text-left">Çap (mm)</th>
+                  <th class="px-3 py-2 text-left">Boy (mm)</th>
+                  <th class="px-3 py-2 text-left">Yük (kN)</th>
+                  <th class="px-3 py-2 text-left">fb (MPa)</th>
+                  <th class="px-3 py-2 text-left">fck (MPa)</th>
+                  <th class="px-3 py-2 text-left">Test Tarihi</th>
                 </tr>
-              `).join('') || '<tr><td colspan="8" class="text-center py-4 text-gray-500">Henüz veri yok</td></tr>'}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                ${karotData.data?.map(d => `
+                  <tr class="border-t hover:bg-gray-50">
+                    <td class="px-3 py-2 font-semibold">${d.karot_no || d.numune_no || '-'}</td>
+                    <td class="px-3 py-2">${d.eleman_kodu || d.lokasyon || '-'}</td>
+                    <td class="px-3 py-2">${d.kat || '-'}</td>
+                    <td class="px-3 py-2">${d.cap_mm || d.cap || '-'}</td>
+                    <td class="px-3 py-2">${d.boy_mm || d.uzunluk || '-'}</td>
+                    <td class="px-3 py-2">${d.kirilma_yuku_kn || '-'}</td>
+                    <td class="px-3 py-2 font-bold text-orange-600">${d.fb_mpa || d.basınc_dayanimi || '-'}</td>
+                    <td class="px-3 py-2 font-bold text-red-600">${d.fck_mpa || '-'}</td>
+                    <td class="px-3 py-2">${d.test_tarihi || '-'}</td>
+                  </tr>
+                `).join('') || '<tr><td colspan="9" class="text-center py-4 text-gray-500">Henüz karot verisi eklenmemiş</td></tr>'}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -1375,6 +1737,37 @@ async function showKarotForm(content) {
     await api.createFieldData('karot', selectedProject.id, data);
     showFieldTab('karot');
   });
+}
+
+// Karot hesaplama fonksiyonu
+window.calculateKarot = function() {
+  const cap = parseFloat(document.getElementById('karotCap')?.value);
+  const yuk = parseFloat(document.getElementById('karotYuk')?.value);
+  
+  if (!cap || !yuk || cap <= 0 || yuk <= 0) {
+    document.getElementById('karotFb').value = '';
+    document.getElementById('karotFck').value = '';
+    return;
+  }
+  
+  // Çapı metre cinsine çevir
+  const cap_m = cap / 1000;
+  
+  // Kesit alanı (m²)
+  const alan = Math.PI * Math.pow(cap_m / 2, 2);
+  
+  // Yükü Newton'a çevir
+  const yuk_n = yuk * 1000;
+  
+  // fb hesapla (MPa)
+  const fb = yuk_n / (alan * 1000000);
+  
+  // fck tahmin et (yaklaşık 0.85 * fb)
+  const fck = fb * 0.85;
+  
+  document.getElementById('karotFb').value = fb.toFixed(2);
+  document.getElementById('karotFck').value = fck.toFixed(2);
+}
 }
 
 async function showSchmidtForm(content) {
@@ -1393,38 +1786,83 @@ async function showSchmidtForm(content) {
         </h3>
         
         <form id="schmidtForm" class="space-y-4 mb-4">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <input type="text" name="test_no" placeholder="Test No" class="px-3 py-2 border rounded" required />
             <input type="text" name="lokasyon" placeholder="Lokasyon" class="px-3 py-2 border rounded" />
             <input type="text" name="kat" placeholder="Kat" class="px-3 py-2 border rounded" />
+            <input type="text" name="eleman_tipi" placeholder="Eleman (Kolon/Perde/Kiriş)" class="px-3 py-2 border rounded" />
+          </div>
+          
+          <!-- Otomatik Değer Üretici -->
+          <div class="bg-blue-50 border border-blue-300 rounded-lg p-4">
+            <h4 class="font-semibold mb-3 text-blue-900">
+              <i class="fas fa-magic mr-2"></i>Otomatik Değer Üretici
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-sm font-medium mb-1">Ortalama Değer</label>
+                <input type="number" id="autoAvg" placeholder="Ör: 45" class="w-full px-3 py-2 border rounded" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Sapma Aralığı (±)</label>
+                <input type="number" id="autoRange" value="8" placeholder="Ör: 8" class="w-full px-3 py-2 border rounded" />
+              </div>
+              <div class="flex items-end">
+                <button type="button" onclick="autoGenerateSchmidt()" 
+                        class="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded hover:from-blue-600 hover:to-blue-700">
+                  <i class="fas fa-bolt mr-2"></i>Otomatik Üret
+                </button>
+              </div>
+            </div>
+            <p class="text-xs text-gray-600 mt-2">
+              <i class="fas fa-info-circle mr-1"></i>
+              Ortalama değer ve sapma aralığı girerek 10 okuma değerini otomatik oluşturabilirsiniz.
+            </p>
           </div>
           
           <div class="bg-gray-50 p-4 rounded">
-            <h4 class="font-semibold mb-3">10 Okuma Değeri:</h4>
+            <div class="flex justify-between items-center mb-3">
+              <h4 class="font-semibold">10 Okuma Değeri:</h4>
+              <button type="button" onclick="clearSchmidtReadings()" 
+                      class="text-sm text-red-600 hover:text-red-700">
+                <i class="fas fa-eraser mr-1"></i>Temizle
+              </button>
+            </div>
             <div class="grid grid-cols-5 gap-3">
-              <input type="number" name="okuma_1" placeholder="1" class="px-3 py-2 border rounded" />
-              <input type="number" name="okuma_2" placeholder="2" class="px-3 py-2 border rounded" />
-              <input type="number" name="okuma_3" placeholder="3" class="px-3 py-2 border rounded" />
-              <input type="number" name="okuma_4" placeholder="4" class="px-3 py-2 border rounded" />
-              <input type="number" name="okuma_5" placeholder="5" class="px-3 py-2 border rounded" />
-              <input type="number" name="okuma_6" placeholder="6" class="px-3 py-2 border rounded" />
-              <input type="number" name="okuma_7" placeholder="7" class="px-3 py-2 border rounded" />
-              <input type="number" name="okuma_8" placeholder="8" class="px-3 py-2 border rounded" />
-              <input type="number" name="okuma_9" placeholder="9" class="px-3 py-2 border rounded" />
-              <input type="number" name="okuma_10" placeholder="10" class="px-3 py-2 border rounded" />
+              <input type="number" name="okuma_1" id="okuma_1" placeholder="R1" class="px-3 py-2 border rounded" onchange="calculateSchmidtAverage()" />
+              <input type="number" name="okuma_2" id="okuma_2" placeholder="R2" class="px-3 py-2 border rounded" onchange="calculateSchmidtAverage()" />
+              <input type="number" name="okuma_3" id="okuma_3" placeholder="R3" class="px-3 py-2 border rounded" onchange="calculateSchmidtAverage()" />
+              <input type="number" name="okuma_4" id="okuma_4" placeholder="R4" class="px-3 py-2 border rounded" onchange="calculateSchmidtAverage()" />
+              <input type="number" name="okuma_5" id="okuma_5" placeholder="R5" class="px-3 py-2 border rounded" onchange="calculateSchmidtAverage()" />
+              <input type="number" name="okuma_6" id="okuma_6" placeholder="R6" class="px-3 py-2 border rounded" onchange="calculateSchmidtAverage()" />
+              <input type="number" name="okuma_7" id="okuma_7" placeholder="R7" class="px-3 py-2 border rounded" onchange="calculateSchmidtAverage()" />
+              <input type="number" name="okuma_8" id="okuma_8" placeholder="R8" class="px-3 py-2 border rounded" onchange="calculateSchmidtAverage()" />
+              <input type="number" name="okuma_9" id="okuma_9" placeholder="R9" class="px-3 py-2 border rounded" onchange="calculateSchmidtAverage()" />
+              <input type="number" name="okuma_10" id="okuma_10" placeholder="R10" class="px-3 py-2 border rounded" onchange="calculateSchmidtAverage()" />
             </div>
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <input type="number" step="0.01" name="ortalama" placeholder="Ortalama" class="px-3 py-2 border rounded" />
-            <input type="number" step="0.01" name="tahmini_dayanim" placeholder="Tahmini Dayanım (MPa)" class="px-3 py-2 border rounded" />
-            <input type="date" name="test_tarihi" placeholder="Test Tarihi" class="px-3 py-2 border rounded" />
+            <div>
+              <label class="block text-sm font-medium mb-1">Ortalama (Otomatik)</label>
+              <input type="number" step="0.01" name="ortalama" id="schmidtAverage" readonly 
+                     class="w-full px-3 py-2 border rounded bg-gray-100" placeholder="Otomatik hesaplanacak" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Tahmini Dayanım (MPa)</label>
+              <input type="number" step="0.01" name="tahmini_dayanim" 
+                     class="w-full px-3 py-2 border rounded" placeholder="Ör: 25.5" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Test Tarihi</label>
+              <input type="date" name="test_tarihi" class="w-full px-3 py-2 border rounded" />
+            </div>
           </div>
           
           <input type="text" name="notlar" placeholder="Notlar" class="w-full px-3 py-2 border rounded" />
           
-          <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
-            <i class="fas fa-plus mr-2"></i>Ekle
+          <button type="submit" class="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold">
+            <i class="fas fa-save mr-2"></i>Kaydet
           </button>
         </form>
         
@@ -1433,6 +1871,7 @@ async function showSchmidtForm(content) {
             <thead class="bg-gray-100">
               <tr>
                 <th class="px-3 py-2 text-left">Test No</th>
+                <th class="px-3 py-2 text-left">Eleman</th>
                 <th class="px-3 py-2 text-left">Lokasyon</th>
                 <th class="px-3 py-2 text-left">Kat</th>
                 <th class="px-3 py-2 text-left">Ortalama</th>
@@ -1445,12 +1884,85 @@ async function showSchmidtForm(content) {
               ${schmidtData.data?.map(d => `
                 <tr class="border-t">
                   <td class="px-3 py-2">${d.test_no || '-'}</td>
+                  <td class="px-3 py-2">${d.eleman_tipi || '-'}</td>
                   <td class="px-3 py-2">${d.lokasyon || '-'}</td>
                   <td class="px-3 py-2">${d.kat || '-'}</td>
-                  <td class="px-3 py-2">${d.ortalama || '-'}</td>
+                  <td class="px-3 py-2 font-bold">${d.ortalama || '-'}</td>
                   <td class="px-3 py-2">${d.tahmini_dayanim || '-'}</td>
                   <td class="px-3 py-2">${d.test_tarihi || '-'}</td>
                   <td class="px-3 py-2">${d.notlar || '-'}</td>
+                </tr>
+              `).join('') || '<tr><td colspan="8" class="text-center py-4 text-gray-500">Henüz veri yok</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('schmidtForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = {};
+    formData.forEach((value, key) => data[key] = value);
+    
+    await api.createFieldData('schmidt', selectedProject.id, data);
+    showFieldTab('schmidt');
+  });
+}
+
+// Schmidt otomatik değer üretici
+window.autoGenerateSchmidt = function() {
+  const avg = parseFloat(document.getElementById('autoAvg').value);
+  const range = parseFloat(document.getElementById('autoRange').value) || 8;
+  
+  if (!avg || avg < 10 || avg > 70) {
+    alert('Lütfen geçerli bir ortalama değer girin (10-70 arası)');
+    return;
+  }
+  
+  const values = generateSchmidtValues(avg, range);
+  
+  for (let i = 0; i < 10; i++) {
+    document.getElementById(`okuma_${i+1}`).value = values[i];
+  }
+  
+  calculateSchmidtAverage();
+  
+  // Success animation
+  const btn = event.target;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-check mr-2"></i>Başarılı!';
+  btn.classList.add('bg-green-500');
+  setTimeout(() => {
+    btn.innerHTML = originalText;
+    btn.classList.remove('bg-green-500');
+  }, 1500);
+}
+
+// Schmidt okumalarını temizle
+window.clearSchmidtReadings = function() {
+  for (let i = 1; i <= 10; i++) {
+    document.getElementById(`okuma_${i}`).value = '';
+  }
+  document.getElementById('schmidtAverage').value = '';
+}
+
+// Schmidt ortalama hesapla
+window.calculateSchmidtAverage = function() {
+  const values = [];
+  for (let i = 1; i <= 10; i++) {
+    const val = parseFloat(document.getElementById(`okuma_${i}`)?.value);
+    if (!isNaN(val)) values.push(val);
+  }
+  
+  if (values.length > 0) {
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    document.getElementById('schmidtAverage').value = avg.toFixed(2);
+  } else {
+    document.getElementById('schmidtAverage').value = '';
+  }
+}
                 </tr>
               `).join('') || '<tr><td colspan="7" class="text-center py-4 text-gray-500">Henüz veri yok</td></tr>'}
             </tbody>
