@@ -1731,11 +1731,261 @@ async function saveKolonSiyirma(form) {
 }
 
 function showPerdeSiyirmaForm(content) {
+  const perdeKodlari = window.siyirmaPerdeKodlari || [];
+  const perdeData = window.siyirmaPerdeData || { data: [] };
+  
+  const perdeOptions = perdeKodlari.map(p => 
+    `<option value="${p.perde_kodu}">${p.perde_kodu} (${p.genis_yuzey}x${p.dar_yuzey} cm)</option>`
+  ).join('');
+  
   content.innerHTML = `
-    <div class="text-center py-8">
-      <p class="text-gray-600">Perde sıyırma formu yakında eklenecek...</p>
+    <div class="space-y-4">
+      <h4 class="text-lg font-bold">Yeni Perde Sıyırma Ekle</h4>
+      
+      <form id="perdeSiyirmaForm" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Perde Kodu *</label>
+            <select name="perde_kodu" id="perdeKoduSelect" class="w-full px-3 py-2 border rounded" required>
+              <option value="">Seçiniz</option>
+              ${perdeOptions}
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Geniş Yüzey (cm)</label>
+            <input type="number" step="0.01" name="genis_yuzey" id="perdeGenisYuzey" class="w-full px-3 py-2 border rounded" readonly />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Dar Yüzey (cm)</label>
+            <input type="number" step="0.01" name="dar_yuzey" id="perdeDarYuzey" class="w-full px-3 py-2 border rounded" readonly />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Donatı Çapı</label>
+            <input type="text" name="donati_capi" placeholder="Ø14, Ø16..." class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Etriye Çapı</label>
+            <input type="text" name="etriye_capi" placeholder="Ø8, Ø10..." class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Etriye Aralığı (cm)</label>
+            <input type="number" step="0.01" name="etriye_aralik" class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Pas Payı (cm)</label>
+            <input type="number" step="0.01" name="pas_payi" class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Okunan Çap (Korozyon)</label>
+            <input type="text" name="okunan_cap" placeholder="Ø12..." class="w-full px-3 py-2 border rounded" />
+          </div>
+          
+          <div class="md:col-span-2 lg:col-span-3">
+            <label class="block text-sm font-medium mb-1">Notlar</label>
+            <input type="text" name="notlar" class="w-full px-3 py-2 border rounded" />
+          </div>
+        </div>
+        
+        <!-- Fotoğraflar -->
+        <div class="border-t pt-4 mt-4">
+          <h5 class="font-semibold mb-3">Fotoğraflar</h5>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${generatePerdePhotoUploadSection('gorunum', 'Perde Görünümü')}
+            ${generatePerdePhotoUploadSection('donati_capi', 'Donatı Çapı')}
+            ${generatePerdePhotoUploadSection('etriye_capi', 'Etriye Çapı')}
+            ${generatePerdePhotoUploadSection('korozyon', 'Korozyon')}
+            ${generatePerdePhotoUploadSection('etriye_araligi', 'Etriye Aralığı')}
+          </div>
+        </div>
+        
+        <button type="submit" class="w-full bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+          <i class="fas fa-plus mr-2"></i>Kaydet
+        </button>
+      </form>
+      
+      <!-- Kaydedilmiş Perdeler -->
+      <div class="mt-6">
+        <h4 class="text-lg font-bold mb-3">Kaydedilmiş Perdeler</h4>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-100">
+              <tr>
+                <th class="px-3 py-2 text-left">Perde Kodu</th>
+                <th class="px-3 py-2 text-left">Boyutlar</th>
+                <th class="px-3 py-2 text-left">Donatı</th>
+                <th class="px-3 py-2 text-left">Etriye</th>
+                <th class="px-3 py-2 text-left">Fotoğraflar</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${perdeData.data?.map(d => `
+                <tr class="border-t">
+                  <td class="px-3 py-2 font-mono font-bold">${d.perde_kodu || '-'}</td>
+                  <td class="px-3 py-2">${d.genis_yuzey}x${d.dar_yuzey} cm</td>
+                  <td class="px-3 py-2">${d.donati_capi || '-'}</td>
+                  <td class="px-3 py-2">${d.etriye_capi || '-'} / ${d.etriye_aralik || '-'} cm</td>
+                  <td class="px-3 py-2">
+                    <button onclick="viewPerdePhotos('${d.perde_kodu}')" class="text-purple-600 hover:underline">
+                      <i class="fas fa-images"></i> Görüntüle
+                    </button>
+                  </td>
+                </tr>
+              `).join('') || '<tr><td colspan="5" class="text-center py-4 text-gray-500">Henüz veri yok</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   `;
+  
+  // Auto-fill boyutlar when perde selected
+  document.getElementById('perdeKoduSelect').addEventListener('change', (e) => {
+    const selectedPerde = perdeKodlari.find(p => p.perde_kodu === e.target.value);
+    if (selectedPerde) {
+      document.getElementById('perdeGenisYuzey').value = selectedPerde.genis_yuzey || '';
+      document.getElementById('perdeDarYuzey').value = selectedPerde.dar_yuzey || '';
+    }
+  });
+  
+  // Form submit
+  document.getElementById('perdeSiyirmaForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await savePerdeSiyirma(e.target);
+  });
+}
+
+function generatePerdePhotoUploadSection(fotoTipi, label) {
+  const fotoTipiSafe = fotoTipi.replace(/_/g, '-');
+  return `
+    <div class="border rounded p-3">
+      <label class="block text-xs font-semibold mb-2">${label}</label>
+      <div class="flex gap-1 mb-2">
+        <button type="button" onclick="capturePhotoForPerde('${fotoTipi}')" 
+                class="flex-1 bg-green-600 text-white text-xs py-1 px-2 rounded">
+          <i class="fas fa-camera"></i>
+        </button>
+        <button type="button" onclick="selectPhotoForPerde('${fotoTipi}')" 
+                class="flex-1 bg-purple-600 text-white text-xs py-1 px-2 rounded">
+          <i class="fas fa-images"></i>
+        </button>
+      </div>
+      <div id="perde-photo-preview-${fotoTipiSafe}" class="text-xs text-gray-500"></div>
+      <input type="hidden" id="perde-photo-data-${fotoTipiSafe}" name="foto_${fotoTipi}" />
+    </div>
+  `;
+}
+
+window.capturePhotoForPerde = async function(fotoTipi) {
+  const perdeKodu = document.getElementById('perdeKoduSelect').value;
+  if (!perdeKodu) {
+    alert('Lütfen önce perde kodu seçiniz');
+    return;
+  }
+  
+  try {
+    const photo = await capturePhoto(perdeKodu, fotoTipi);
+    const fotoTipiSafe = fotoTipi.replace(/_/g, '-');
+    document.getElementById(`perde-photo-data-${fotoTipiSafe}`).value = JSON.stringify(photo);
+    document.getElementById(`perde-photo-preview-${fotoTipiSafe}`).innerHTML = 
+      `<i class="fas fa-check text-green-600"></i> ${(photo.size / 1024).toFixed(0)} KB`;
+  } catch (error) {
+    console.error('Fotoğraf çekme hatası:', error);
+  }
+};
+
+window.selectPhotoForPerde = async function(fotoTipi) {
+  const perdeKodu = document.getElementById('perdeKoduSelect').value;
+  if (!perdeKodu) {
+    alert('Lütfen önce perde kodu seçiniz');
+    return;
+  }
+  
+  try {
+    const photo = await selectPhotoFromGallery(perdeKodu, fotoTipi);
+    const fotoTipiSafe = fotoTipi.replace(/_/g, '-');
+    document.getElementById(`perde-photo-data-${fotoTipiSafe}`).value = JSON.stringify(photo);
+    document.getElementById(`perde-photo-preview-${fotoTipiSafe}`).innerHTML = 
+      `<i class="fas fa-check text-green-600"></i> ${(photo.size / 1024).toFixed(0)} KB`;
+  } catch (error) {
+    console.error('Fotoğraf seçme hatası:', error);
+  }
+};
+
+async function savePerdeSiyirma(form) {
+  const formData = new FormData(form);
+  const data = {};
+  formData.forEach((value, key) => {
+    if (!key.startsWith('foto_')) {
+      data[key] = value;
+    }
+  });
+  
+  try {
+    // Save perde siyirma
+    const result = await api.createFieldData('perde-siyirma', selectedProject.id, data);
+    
+    // Upload photos
+    const fotoTipleri = ['gorunum', 'donati_capi', 'etriye_capi', 'korozyon', 'etriye_araligi'];
+    for (const fotoTipi of fotoTipleri) {
+      const fotoTipiSafe = fotoTipi.replace(/_/g, '-');
+      const photoDataStr = document.getElementById(`perde-photo-data-${fotoTipiSafe}`).value;
+      if (photoDataStr) {
+        const photoData = JSON.parse(photoDataStr);
+        await uploadPhotoToServer(selectedProject.id, 'perde_siyirma', result.id, photoData);
+      }
+    }
+    
+    alert('Perde sıyırma başarıyla kaydedildi!');
+    showFieldTab('siyirma');
+  } catch (error) {
+    alert('Hata: ' + error.message);
+  }
+}
+
+window.viewPerdePhotos = async function(perdeKodu) {
+  try {
+    const { photos } = await api.getPhotos(selectedProject.id, perdeKodu);
+    
+    if (photos.length === 0) {
+      alert('Bu perde için fotoğraf bulunamadı.');
+      return;
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
+        <div class="p-4 border-b flex justify-between items-center sticky top-0 bg-white">
+          <h3 class="text-lg font-bold">${perdeKodu} Fotoğrafları</h3>
+          <button onclick="this.closest('.fixed').remove()" class="text-gray-600 hover:text-gray-900">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          ${photos.map(p => `
+            <div class="border rounded p-2">
+              <p class="font-semibold text-sm mb-2">${p.foto_adi}</p>
+              <img src="${p.foto_data}" class="w-full rounded mb-2" />
+              <button onclick="downloadPhoto('${p.foto_data}', '${p.foto_adi}')" 
+                      class="w-full bg-purple-600 text-white py-1 rounded text-sm">
+                <i class="fas fa-download mr-1"></i>İndir
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  } catch (error) {
+    alert('Fotoğraflar yüklenirken hata oluştu.');
+  }
 }
 
 window.viewKolonPhotos = async function(kolonKodu) {
