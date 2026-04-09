@@ -1,10 +1,11 @@
 import { serve } from '@hono/node-server'
+import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import Database from 'better-sqlite3'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import { readFileSync } from 'fs'
+import { readFileSync, existsSync } from 'fs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -33,6 +34,10 @@ console.log('✅ Migrations done!')
 const app = new Hono()
 
 app.use('/api/*', cors())
+
+// ==================== STATIC FILES ====================
+// Serve static files from public directory
+app.use('/static/*', serveStatic({ root: './public' }))
 
 // ==================== AUTH ====================
 app.post('/api/auth/login', async (c) => {
@@ -196,17 +201,61 @@ app.put('/api/notifications/:id/read', async (c) => {
   return c.json({ success: true })
 })
 
-// ==================== FRONTEND ====================
-
-// Read app.js once at startup
-const appJs = readFileSync(join(__dirname, 'public/static/app.js'), 'utf-8')
-
-// Serve app.js directly
-app.get('/static/app.js', (c) => {
-  return c.text(appJs, 200, { 'Content-Type': 'application/javascript' })
+// ==================== MUHASEBE ====================
+app.get('/api/muhasebe', async (c) => {
+  const records = db.prepare('SELECT m.*, p.is_no FROM muhasebe m JOIN projects p ON m.project_id = p.id ORDER BY m.created_at DESC').all()
+  return c.json({ records })
 })
 
+app.post('/api/muhasebe', async (c) => {
+  const data = await c.req.json()
+  const authHeader = c.req.header('Authorization')
+  let createdBy = null
+  if (authHeader?.startsWith('Bearer ')) {
+    try { const decoded = atob(authHeader.substring(7)); createdBy = parseInt(decoded.split(':')[0]) } catch {}
+  }
+  const result = db.prepare('INSERT INTO muhasebe (project_id, islem_tipi, tutar, aciklama, fatura_no, fatura_tarihi, odeme_durumu, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(data.project_id, data.islem_tipi, data.tutar, data.aciklama, data.fatura_no, data.fatura_tarihi, data.odeme_durumu || 'Bekliyor', createdBy)
+  return c.json({ success: true, id: result.lastInsertRowid })
+})
+
+// ==================== ANALYSIS ====================
+app.get('/api/analiz/:projectId', async (c) => {
+  const result = db.prepare('SELECT * FROM analiz_sonuclari WHERE project_id = ?').get(c.req.param('projectId'))
+  return c.json({ analiz: result })
+})
+
+app.post('/api/analiz/:projectId', async (c) => {
+  const projectId = c.req.param('projectId')
+  const data = await c.req.json()
+  const existing = db.prepare('SELECT id FROM analiz_sonuclari WHERE project_id = ?').get(projectId)
+  if (existing) {
+    db.prepare('UPDATE analiz_sonuclari SET rbty_sonuc=?, tbdy_sonuc=?, sonuc_aciklama=?, analiz_tarihi=? WHERE project_id=?').run(data.rbty_sonuc, data.tbdy_sonuc, data.sonuc_aciklama, data.analiz_tarihi, projectId)
+  } else {
+    db.prepare('INSERT INTO analiz_sonuclari (project_id, raportoru_id, rbty_sonuc, tbdy_sonuc, sonuc_aciklama, analiz_tarihi) VALUES (?, ?, ?, ?, ?, ?)').run(projectId, data.raportoru_id, data.rbty_sonuc, data.tbdy_sonuc, data.sonuc_aciklama, data.analiz_tarihi)
+  }
+  return c.json({ success: true })
+})
+
+// ==================== FRONTEND ====================
 app.get('/', (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yapı Risk Analizi Yönetim Sistemi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div id="app"></div>
+    <script src="/static/app.js"></script>
+</body>
+</html>`)
+})
+
+// Catch-all: return index for SPA
+app.get('*', (c) => {
   return c.html(`<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -225,5 +274,6 @@ app.get('/', (c) => {
 
 const port = process.env.PORT || 3000
 console.log(`🚀 Server running on port ${port}`)
+console.log(`📁 Serving static files from: ${join(__dirname, 'public')}`)
 
 serve({ fetch: app.fetch, port: Number(port) })
