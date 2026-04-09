@@ -9,8 +9,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "webapp-production",
-      "database_id": "local-dev"
+      "database_name": "yapi-risk-production",
+      "database_id": "e01bf17d-80b5-4996-84c3-58c8aa853397"
     }
   ]
 }
