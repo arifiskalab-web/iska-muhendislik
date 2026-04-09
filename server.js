@@ -1,5 +1,4 @@
 import { serve } from '@hono/node-server'
-import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import Database from 'better-sqlite3'
@@ -34,7 +33,6 @@ console.log('✅ Migrations done!')
 const app = new Hono()
 
 app.use('/api/*', cors())
-app.use('/static/*', serveStatic({ root: './' }))
 
 // ==================== AUTH ====================
 app.post('/api/auth/login', async (c) => {
@@ -199,23 +197,30 @@ app.put('/api/notifications/:id/read', async (c) => {
 })
 
 // ==================== FRONTEND ====================
+
+// Read app.js once at startup
+const appJs = readFileSync(join(__dirname, 'public/static/app.js'), 'utf-8')
+
+// Serve app.js directly
+app.get('/static/app.js', (c) => {
+  return c.text(appJs, 200, { 'Content-Type': 'application/javascript' })
+})
+
 app.get('/', (c) => {
-  return c.html(`
-    <!DOCTYPE html>
-    <html lang="tr">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Yapı Risk Analizi Yönetim Sistemi</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-    </head>
-    <body class="bg-gray-100">
-        <div id="app"></div>
-        <script src="/static/app.js"></script>
-    </body>
-    </html>
-  `)
+  return c.html(`<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yapı Risk Analizi Yönetim Sistemi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div id="app"></div>
+    <script src="/static/app.js"></script>
+</body>
+</html>`)
 })
 
 const port = process.env.PORT || 3000
