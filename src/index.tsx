@@ -8,8 +8,8 @@ const app = new Hono<{ Bindings: Bindings }>()
 // CORS middleware for API routes
 app.use('/api/*', cors())
 
-// Serve static files
-app.use('/static/*', serveStatic({ root: './' }))
+// Serve static files from dist/static directory
+app.use('/static/*', serveStatic())
 
 // ==================== AUTH API ====================
 
