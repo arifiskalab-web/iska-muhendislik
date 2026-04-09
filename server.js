@@ -237,40 +237,21 @@ app.post('/api/analiz/:projectId', async (c) => {
 })
 
 // ==================== FRONTEND ====================
-app.get('/', (c) => {
-  return c.html(`<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yapı Risk Analizi Yönetim Sistemi</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-100">
-    <div id="app"></div>
-    <script src="/static/app.js"></script>
-</body>
-</html>`)
-})
 
-// Catch-all: return index for SPA
-app.get('*', (c) => {
-  return c.html(`<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yapı Risk Analizi Yönetim Sistemi</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-100">
-    <div id="app"></div>
-    <script src="/static/app.js"></script>
-</body>
-</html>`)
-})
+// Load app.js at startup - inline into HTML to avoid proxy/CDN issues
+const appJsContent = readFileSync(join(__dirname, 'public/static/app.js'), 'utf-8')
+
+// Serve app.js on multiple paths
+const jsHeaders = { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-cache, no-store' }
+app.get('/js/app.js', (c) => new Response(appJsContent, { headers: jsHeaders }))
+app.get('/app.js', (c) => new Response(appJsContent, { headers: jsHeaders }))
+app.get('/static/app.js', (c) => new Response(appJsContent, { headers: jsHeaders }))
+app.get('/api/js/app', (c) => new Response(appJsContent, { headers: jsHeaders }))
+
+// HTML: use /js/app.js (no /api/ prefix, no /static/ prefix)
+const mainHtml = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Yapi Risk Analizi</title><script src="https://cdn.tailwindcss.com"></script></head><body class="bg-gray-100"><div id="app"></div><script src="/js/app.js"></script></body></html>'
+
+app.get('/', (c) => c.html(mainHtml))
 
 const port = process.env.PORT || 3000
 console.log(`🚀 Server running on port ${port}`)
