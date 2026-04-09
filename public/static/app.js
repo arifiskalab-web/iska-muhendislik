@@ -2970,9 +2970,6 @@ function formatDate(dateString) {
   });
 }
 
-// Initialize on load
-window.addEventListener('DOMContentLoaded', init);
-
 // Make functions global
 window.login = login;
 window.logout = logout;
@@ -3714,8 +3711,12 @@ window.downloadPhoto = function(photoData, photoName) {
   link.click();
 };
 
-// Initialize app on DOM ready
-document.addEventListener('DOMContentLoaded', init);
+// Initialize app on DOM ready - single entry point
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 
 // Expose functions globally
 window.login = login;
