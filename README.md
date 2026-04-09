@@ -4,8 +4,9 @@
 
 ## 🌐 Erişim URL'leri
 
+- **Production (Cloudflare Pages)**: https://yapi-risk-analizi.pages.dev ✅ CANLI
+- **Latest Deployment**: https://ccbde319.yapi-risk-analizi.pages.dev
 - **Geliştirme Ortamı**: https://3000-iqovlox7db4iyo99fr7qb-3c7ff1b5.sandbox.novita.ai
-- **Production**: (Cloudflare Pages'e deploy edilmeye hazır)
 
 ## 🎊 Versiyon 4.0 - %100 TAMAMLANDI! ✨
 
