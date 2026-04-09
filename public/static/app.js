@@ -27,13 +27,17 @@ const api = {
     }
     
     try {
-      const response = await axios({
-        url: `${this.baseURL}${endpoint}`,
+      const response = await fetch(this.baseURL + endpoint, {
         method: options.method || 'GET',
         headers,
-        data: options.data
+        body: options.data ? JSON.stringify(options.data) : undefined
       });
-      return response.data;
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      return await response.json();
     } catch (error) {
       console.error('API Error:', error);
       if (error.response?.status === 401) {
